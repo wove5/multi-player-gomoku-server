@@ -4,7 +4,7 @@ import logger from './logger';
 const connectDB = async () => {
   const dbUri = process.env.dbURI || '';
   logger.info(`⚡️[server]: Connecting to DB...`);
-  logger.info(`⚡️[server] dbURI = ${process.env.dbURI}`);
+  logger.info(`⚡️[server] dbURI = ${dbUri}`);
   try {
     await mongoose.connect(dbUri);
   } catch (error) {
