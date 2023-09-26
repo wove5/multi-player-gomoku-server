@@ -8,6 +8,7 @@ import {
   registerSchema,
 } from '../schema/auth.schema';
 import { signJwt } from '../util/jwt';
+import logger from '../util/logger';
 
 const authHandler = express.Router();
 
@@ -36,8 +37,10 @@ authHandler.post(
       });
 
       // Create token
+      logger.info('⚡️[server]: Creating token.');
       const token = signJwt({ username, _id: newUser._id });
 
+      logger.info('⚡️[server]: Sending response obj & token to client.');
       // return new user with token
       res.status(200).json({ _id: newUser._id, token });
     } catch (err) {
