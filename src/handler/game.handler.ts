@@ -34,18 +34,14 @@ gameHandler.get('/', async (req: Request, res: Response) => {
   const userId = req.userId;
   try {
     const result = await getIncompleteGames(userId);
-    if (result.length > 0) {
-      return res.status(200).send(
-        result.map((g) => ({
-          _id: g._id,
-          gameNumber: g.gameNumber,
-          size: g.size,
-          createdAt: g.createdAt,
-        }))
-      );
-    } else {
-      return res.status(404).send();
-    }
+    return res.status(200).send(
+      result.map((g) => ({
+        _id: g._id,
+        gameNumber: g.gameNumber,
+        size: g.size,
+        createdAt: g.createdAt,
+      }))
+    );
   } catch (err: any) {
     return res.status(500).send(err);
   }
