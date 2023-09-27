@@ -34,6 +34,7 @@ gameHandler.get('/', async (req: Request, res: Response) => {
   const userId = req.userId;
   try {
     const result = await getIncompleteGames(userId);
+    // array is returned, regardless of any games or not; in the latter case, result is []
     return res.status(200).send(
       result.map((g) => ({
         _id: g._id,
@@ -52,6 +53,7 @@ gameHandler.get('/games', async (req: Request, res: Response) => {
   const userId = req.userId;
   try {
     const result = await getCompletedGames(userId);
+    // a bit more handling implemented here than in getIncompleteGames;
     if (result.length > 0) {
       return res.status(200).send(
         result.map((g) => ({
@@ -65,7 +67,9 @@ gameHandler.get('/games', async (req: Request, res: Response) => {
         }))
       );
     } else {
-      return res.status(404).send();
+      // set error message to 'Not Found', so client can use this.
+      return res.status(404).send('Not Found');
+      // return res.status(404).send(res.statusCode); // this gives a deprecation msg
     }
   } catch (err: any) {
     return res.status(500).send(err);
