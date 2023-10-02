@@ -21,9 +21,9 @@ export interface UpdateResultDoc {
 
 export async function getIncompleteGames(
   userId: string
-): Promise<IncompleteGameData[]> {
+): Promise<GameDocument[]> {
   return await GameModel.find({
-    userId: new mongoose.Types.ObjectId(userId),
+    'players.userId': new mongoose.Types.ObjectId(userId),
     status: { $eq: 'ACTIVE' },
   }).lean();
 }
@@ -34,7 +34,8 @@ export async function getCompletedGames(
   return await GameModel.aggregate([
     {
       $match: {
-        userId: new mongoose.Types.ObjectId(userId),
+        // userId: new mongoose.Types.ObjectId(userId),
+        'players.userId': new mongoose.Types.ObjectId(userId),
         status: { $ne: 'ACTIVE' },
       },
     },
@@ -59,7 +60,7 @@ export async function getGameById(
 ): Promise<GameDocument | null> {
   return await GameModel.findOne({
     _id: new mongoose.Types.ObjectId(id),
-    userId: new mongoose.Types.ObjectId(userId),
+    'players.userId': new mongoose.Types.ObjectId(userId),
   }).lean();
 }
 
@@ -125,7 +126,7 @@ export async function updateGame(
     const doc = await GameModel.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(id),
-        userId: new mongoose.Types.ObjectId(userId),
+        // userId: new mongoose.Types.ObjectId(userId),
         positions: {
           $elemMatch: {
             _id: new mongoose.Types.ObjectId(input.id),
