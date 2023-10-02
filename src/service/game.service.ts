@@ -1,9 +1,10 @@
+import { PositionInfo } from './../types/PositionInfo';
 // import { DocumentDefinition } from 'mongoose'; // mongoose ^6, it has its own types
 import NextGameNumberModel, {
   NextGameNumberDocument,
 } from '../model/nextGameNumber.model';
 import GameModel, { GameDocument } from '../model/game.model';
-import { POSITION_STATUS, GAMESTATUS } from '../constants';
+import { POSITION_STATUS, GAMESTATUS, PLAYER } from '../constants';
 import { PositionInfo } from '../types/PositionInfo';
 
 import mongoose from 'mongoose';
@@ -86,7 +87,7 @@ export async function createGame(
     gameNumber: await getNextSequence('gameIdNumber'),
     positions: blankBoardPositions,
     selectedPositions: [],
-    userId: userId,
+    players: [{ userId: userId, color: PLAYER.BLACK }],
   });
 }
 
@@ -100,7 +101,7 @@ export async function updateGame(
       {
         $match: {
           _id: new mongoose.Types.ObjectId(id),
-          userId: new mongoose.Types.ObjectId(userId),
+          // userId: new mongoose.Types.ObjectId(userId),
         },
       },
       {
@@ -179,11 +180,75 @@ export async function updateGame(
         player: doc.positions[doc.selectedPositions.slice(-1)[0]].status,
       };
     }
+  } else if ('action' in input) {
+    if (input.action === 'JOIN') {
+      console.log(`player should be joining`);
+      const doc = await GameModel.findOneAndUpdate(
+        { _id: new mongoose.Types.ObjectId(id) },
+        [
+          {
+            $set: {
+              players: {
+                $concatArrays: [
+                  '$players',
+                  [
+                    {
+                      userId: new mongoose.Types.ObjectId(userId),
+                      color: {
+                        $cond: [
+                          { $eq: [{ $first: '$players.color' }, PLAYER.BLACK] },
+                          PLAYER.WHITE,
+                          PLAYER.BLACK,
+                        ],
+                      },
+                    },
+                  ],
+                ],
+              },
+            },
+          },
+        ]
+        // {
+        //   $push: {
+        //     players: {
+        //       userId: new mongoose.Types.ObjectId(userId),
+        //       color: {
+        //         $cond: [
+        //           { $eq: [{ $first: '$players.color' }, PLAYER.BLACK] },
+        //           PLAYER.WHITE,
+        //           PLAYER.BLACK,
+        //         ],
+        //       },
+        //     },
+        //   },
+        // }
+      );
+      console.log(`doc = ${doc}`);
+      if (doc) {
+        console.log(`attempting to return a <GameStatus> object`);
+        return {
+          status: GAMESTATUS.ACTIVE,
+          player:
+            doc.selectedPositions.length === 0
+              ? POSITION_STATUS.BLACK
+              : doc.positions[doc.selectedPositions.slice(-1)[0]].status,
+        };
+      } else {
+        return null;
+      }
+    } else {
+      // TODO: fill out the 'LEAVE' scenario
+      return null;
+    }
+    return {
+      status: GAMESTATUS.ACTIVE,
+      player: POSITION_STATUS.BLACK,
+    };
   } else {
     const doc = await GameModel.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(id),
-        userId: new mongoose.Types.ObjectId(userId),
+        // userId: new mongoose.Types.ObjectId(userId),
       },
       {
         $set: { 'positions.$[].status': input.status, selectedPositions: [] },

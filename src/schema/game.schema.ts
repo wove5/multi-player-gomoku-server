@@ -1,4 +1,13 @@
-import z, { string, number, array, object, TypeOf, void as void_ } from 'zod';
+import { union } from 'zod';
+import z, {
+  string,
+  number,
+  array,
+  object,
+  TypeOf,
+  void as void_,
+  boolean,
+} from 'zod';
 
 const createGamePayload = {
   body: object({
@@ -11,6 +20,7 @@ const createGamePayload = {
     )
       .nonempty()
       .max(2),
+    isMulti: boolean().default(false),
   }),
 };
 
@@ -22,8 +32,16 @@ const UpdateGameReset = object({
   status: z.literal('NONE'),
 });
 
+const UpdateGameJoinLeave = object({
+  action: z.union([z.literal('JOIN'), z.literal('LEAVE')]),
+});
+
 const updateGamePayloadGeneral = {
-  body: z.union([UpdateGameSelectPosition, UpdateGameReset]),
+  body: z.union([
+    UpdateGameSelectPosition,
+    UpdateGameReset,
+    UpdateGameJoinLeave,
+  ]),
 };
 
 const readUpdateDeleteGameParams = {

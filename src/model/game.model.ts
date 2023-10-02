@@ -20,9 +20,9 @@ enum GAMESTATUS {
 // export interface CompleteGameDocument extends Document {  // mongoose docs recommend not extending Document
 export interface GameDocument {
   // userId: UserDocument['_id'];  // to use this, UserDocument interface will need an explicit _id property
-  blackPlayerId: mongoose.Types.ObjectId; // this seems to fit better with mongoose 6.x and typing
-  whitePlayerId: mongoose.Types.ObjectId; // this seems to fit better with mongoose 6.x and typing
+  players: [{ userId: mongoose.Types.ObjectId; color: SELPOS_STATUS }];
   gameNumber: number;
+  isMulti: boolean;
   size: number[];
   status: GAMESTATUS;
   positions: Array<{
@@ -35,9 +35,15 @@ export interface GameDocument {
 
 const gameSchema = new mongoose.Schema(
   {
-    blackPlayerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    whitePlayerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    players: [
+      {
+        _id: false,
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        color: String,
+      },
+    ],
     gameNumber: Number,
+    isMulti: Boolean,
     size: [Number],
     status: String,
     positions: [
