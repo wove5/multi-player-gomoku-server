@@ -1,4 +1,3 @@
-import { PositionInfo } from './../types/PositionInfo';
 // import { DocumentDefinition } from 'mongoose'; // mongoose ^6, it has its own types
 import NextGameNumberModel, {
   NextGameNumberDocument,
@@ -184,7 +183,12 @@ export async function updateGame(
     if (input.action === 'JOIN') {
       // a player is joining
       const doc = await GameModel.findOneAndUpdate(
-        { _id: new mongoose.Types.ObjectId(id) },
+        {
+          _id: new mongoose.Types.ObjectId(id),
+          status: GAMESTATUS.ACTIVE,
+          players: { $size: 1 },
+          'players.userId': { $ne: userId },
+        },
         [
           {
             $set: {
@@ -225,7 +229,11 @@ export async function updateGame(
     } else {
       // a player is leaving
       const doc = await GameModel.findOneAndUpdate(
-        { _id: new mongoose.Types.ObjectId(id) },
+        {
+          _id: new mongoose.Types.ObjectId(id),
+          status: GAMESTATUS.ACTIVE,
+          'players.userId': userId,
+        },
         { $pull: { players: { userId: userId } } }
       );
       console.log(`doc = ${doc}`);
@@ -246,7 +254,9 @@ export async function updateGame(
     const doc = await GameModel.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(id),
-        // userId: new mongoose.Types.ObjectId(userId),
+        status: GAMESTATUS.ACTIVE,
+        players: { $size: 1 },
+        'players.userId': userId,
       },
       {
         $set: { 'positions.$[].status': input.status, selectedPositions: [] },
@@ -260,7 +270,6 @@ export async function updateGame(
 export async function deleteGame(id: string, userId: string) {
   return GameModel.deleteOne({
     _id: new mongoose.Types.ObjectId(id),
-    // userId: new mongoose.Types.ObjectId(userId),
     status: GAMESTATUS.ACTIVE,
     players: { $size: 1 },
     'players.userId': userId,
