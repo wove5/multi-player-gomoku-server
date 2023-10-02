@@ -208,20 +208,6 @@ export async function updateGame(
             },
           },
         ]
-        // {
-        //   $push: {
-        //     players: {
-        //       userId: new mongoose.Types.ObjectId(userId),
-        //       color: {
-        //         $cond: [
-        //           { $eq: [{ $first: '$players.color' }, PLAYER.BLACK] },
-        //           PLAYER.WHITE,
-        //           PLAYER.BLACK,
-        //         ],
-        //       },
-        //     },
-        //   },
-        // }
       );
       console.log(`doc = ${doc}`);
       if (doc) {
@@ -237,13 +223,24 @@ export async function updateGame(
         return null;
       }
     } else {
-      // TODO: fill out the 'LEAVE' scenario
-      return null;
+      const doc = await GameModel.findOneAndUpdate(
+        { _id: new mongoose.Types.ObjectId(id) },
+        { $pull: { players: { userId: userId } } }
+      );
+      console.log(`doc = ${doc}`);
+      if (doc) {
+        console.log(`attempting to return a <GameStatus> object`);
+        return {
+          status: GAMESTATUS.ACTIVE,
+          player:
+            doc.selectedPositions.length === 0
+              ? POSITION_STATUS.BLACK
+              : doc.positions[doc.selectedPositions.slice(-1)[0]].status,
+        };
+      } else {
+        return null;
+      }
     }
-    return {
-      status: GAMESTATUS.ACTIVE,
-      player: POSITION_STATUS.BLACK,
-    };
   } else {
     const doc = await GameModel.findOneAndUpdate(
       {
