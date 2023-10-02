@@ -182,7 +182,7 @@ export async function updateGame(
     }
   } else if ('action' in input) {
     if (input.action === 'JOIN') {
-      console.log(`player should be joining`);
+      // a player is joining
       const doc = await GameModel.findOneAndUpdate(
         { _id: new mongoose.Types.ObjectId(id) },
         [
@@ -223,6 +223,7 @@ export async function updateGame(
         return null;
       }
     } else {
+      // a player is leaving
       const doc = await GameModel.findOneAndUpdate(
         { _id: new mongoose.Types.ObjectId(id) },
         { $pull: { players: { userId: userId } } }
@@ -259,7 +260,9 @@ export async function updateGame(
 export async function deleteGame(id: string, userId: string) {
   return GameModel.deleteOne({
     _id: new mongoose.Types.ObjectId(id),
-    userId: new mongoose.Types.ObjectId(userId),
+    // userId: new mongoose.Types.ObjectId(userId),
     status: GAMESTATUS.ACTIVE,
+    players: { $size: 1 },
+    'players.userId': userId,
   });
 }
