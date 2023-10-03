@@ -43,6 +43,7 @@ gameHandler.get('/', async (req: Request, res: Response) => {
         isMulti: g.isMulti,
         createdAt: g.createdAt,
         players: g.players,
+        users: g.userDetails,
       }))
     );
   } catch (err: any) {

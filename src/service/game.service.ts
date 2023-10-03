@@ -23,21 +23,53 @@ export interface UpdateResultDoc {
 
 export async function getIncompleteGames(userId: string) {
   // ): Promise<GameDocument[]> {
-  return await GameModel.find({
-    $or: [
-      {
-        'players.userId': new mongoose.Types.ObjectId(userId),
-        status: { $eq: 'ACTIVE' },
+  // return await GameModel.find({
+  return await GameModel.aggregate([
+    {
+      $match: {
+        $or: [
+          {
+            'players.userId': new mongoose.Types.ObjectId(userId),
+            status: { $eq: 'ACTIVE' },
+          },
+          {
+            isMulti: true,
+            status: GAMESTATUS.ACTIVE,
+            players: { $size: 1 },
+            'players.userId': { $ne: userId },
+          },
+        ],
       },
-      {
-        isMulti: true,
-        status: GAMESTATUS.ACTIVE,
-        players: { $size: 1 },
-        'players.userId': { $ne: userId },
-        // 'players.userId': { $nin: [userId] },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'players.userId',
+        foreignField: '_id',
+        as: 'userDetail',
+        pipeline: [
+          {
+            $project: {
+              _id: 0,
+              userId: '$_id',
+              username: 1,
+            },
+          },
+        ],
       },
-    ],
-  }).lean();
+    },
+    {
+      $project: {
+        _id: 1,
+        gameNumber: 1,
+        size: 1,
+        isMulti: 1,
+        createdAt: 1,
+        players: 1,
+        userDetails: '$userDetail',
+      },
+    },
+  ]);
 }
 
 export async function getCompletedGames(
