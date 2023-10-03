@@ -40,7 +40,9 @@ gameHandler.get('/', async (req: Request, res: Response) => {
         _id: g._id,
         gameNumber: g.gameNumber,
         size: g.size,
+        isMulti: g.isMulti,
         createdAt: g.createdAt,
+        players: g.players,
       }))
     );
   } catch (err: any) {

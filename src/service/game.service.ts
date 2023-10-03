@@ -13,18 +13,30 @@ import gameWon from '../util/gameWon';
 import { GameStatus } from '../types/GameStatus';
 import logger from '../util/logger';
 
+// mongoose.set('debug', true);
+
 export interface UpdateResultDoc {
   ok: number;
   n: number;
   nModified: number;
 }
 
-export async function getIncompleteGames(
-  userId: string
-): Promise<GameDocument[]> {
+export async function getIncompleteGames(userId: string) {
+  // ): Promise<GameDocument[]> {
   return await GameModel.find({
-    'players.userId': new mongoose.Types.ObjectId(userId),
-    status: { $eq: 'ACTIVE' },
+    $or: [
+      {
+        'players.userId': new mongoose.Types.ObjectId(userId),
+        status: { $eq: 'ACTIVE' },
+      },
+      {
+        isMulti: true,
+        status: GAMESTATUS.ACTIVE,
+        players: { $size: 1 },
+        'players.userId': { $ne: userId },
+        // 'players.userId': { $nin: [userId] },
+      },
+    ],
   }).lean();
 }
 
@@ -60,7 +72,7 @@ export async function getGameById(
 ): Promise<GameDocument | null> {
   return await GameModel.findOne({
     _id: new mongoose.Types.ObjectId(id),
-    'players.userId': new mongoose.Types.ObjectId(userId),
+    // 'players.userId': new mongoose.Types.ObjectId(userId),
   }).lean();
 }
 
@@ -81,13 +93,15 @@ export async function createGame(
     ...Array(input.size[0] * input.size[1]),
   ].map((_) => ({ status: POSITION_STATUS.NONE }));
 
-  return GameModel.create({
+  return await GameModel.create({
     ...input,
     status: GAMESTATUS.ACTIVE,
     gameNumber: await getNextSequence('gameIdNumber'),
     positions: blankBoardPositions,
     selectedPositions: [],
-    players: [{ userId: userId, color: PLAYER.BLACK }],
+    players: [
+      { userId: new mongoose.Types.ObjectId(userId), color: PLAYER.BLACK },
+    ],
   });
 }
 
@@ -217,13 +231,14 @@ export async function updateGame(
       console.log(`doc = ${doc}`);
       if (doc) {
         console.log(`attempting to return a <GameStatus> object`);
-        return {
-          status: GAMESTATUS.ACTIVE,
-          player:
-            doc.selectedPositions.length === 0
-              ? POSITION_STATUS.BLACK
-              : doc.positions[doc.selectedPositions.slice(-1)[0]].status,
-        };
+        // return {
+        //   status: GAMESTATUS.ACTIVE,
+        //   player:
+        //     doc.selectedPositions.length === 0
+        //       ? POSITION_STATUS.BLACK
+        //       : doc.positions[doc.selectedPositions.slice(-1)[0]].status,
+        // };
+        return doc;
       } else {
         return null;
       }
