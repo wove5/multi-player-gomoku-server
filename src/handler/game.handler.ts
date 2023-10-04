@@ -112,7 +112,7 @@ gameHandler.get(
 
       const game = await getGameById(gameId, userId);
       if (!game) return res.sendStatus(404);
-      return res.status(200).json(game);
+      return res.status(200).json(game[0]);
     } catch (err: any) {
       return res.status(500).send(err);
     }
@@ -133,7 +133,7 @@ gameHandler.get(
 
       const game = await getGameById(gameId, userId);
       if (!game) return res.sendStatus(404);
-      return res.status(200).json(game);
+      return res.status(200).json(game[0]);
     } catch (err: any) {
       return res.status(500).send(err);
     }

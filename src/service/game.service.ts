@@ -99,13 +99,39 @@ export async function getCompletedGames(
 }
 
 export async function getGameById(
-  id: string,
-  userId: string
-): Promise<GameDocument | null> {
-  return await GameModel.findOne({
-    _id: new mongoose.Types.ObjectId(id),
-    // 'players.userId': new mongoose.Types.ObjectId(userId),
-  }).lean();
+  id: string
+  // userId: string
+  // ): Promise<GameDocument | null> {
+  //   return await GameModel.findOne({
+  //     _id: new mongoose.Types.ObjectId(id),
+  //     // 'players.userId': new mongoose.Types.ObjectId(userId),
+  //   }).lean();
+  // }
+) {
+  return await GameModel.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(id),
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'players.userId',
+        foreignField: '_id',
+        as: 'userDetail',
+        pipeline: [
+          {
+            $project: {
+              _id: 0,
+              userId: '$_id',
+              username: 1,
+            },
+          },
+        ],
+      },
+    },
+  ]);
 }
 
 async function getNextSequence(name: string) {
@@ -229,7 +255,8 @@ export async function updateGame(
   } else if ('action' in input) {
     if (input.action === 'JOIN') {
       // a player is joining
-      const doc = await GameModel.findOneAndUpdate(
+      // const doc = await GameModel.findOneAndUpdate(
+      await GameModel.findOneAndUpdate(
         {
           _id: new mongoose.Types.ObjectId(id),
           status: GAMESTATUS.ACTIVE,
@@ -260,6 +287,32 @@ export async function updateGame(
           },
         ]
       );
+
+      const doc = await GameModel.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(id),
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'players.userId',
+            foreignField: '_id',
+            as: 'userDetail',
+            pipeline: [
+              {
+                $project: {
+                  _id: 0,
+                  userId: '$_id',
+                  username: 1,
+                },
+              },
+            ],
+          },
+        },
+      ]);
+
       console.log(`doc = ${doc}`);
       if (doc) {
         console.log(`attempting to return a <GameStatus> object`);
@@ -270,7 +323,7 @@ export async function updateGame(
         //       ? POSITION_STATUS.BLACK
         //       : doc.positions[doc.selectedPositions.slice(-1)[0]].status,
         // };
-        return doc;
+        return doc[0];
       } else {
         return null;
       }
