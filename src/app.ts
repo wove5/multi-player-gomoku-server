@@ -1,3 +1,5 @@
+import { createServer } from 'http';
+import { startWebSocketServer } from './websocket';
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
@@ -29,10 +31,27 @@ app.get('/healthcheck', (req: Request, res: Response) => {
 app.use('/api/auth', authHandler);
 app.use('/api', gameHandler);
 
+// create http server
+export const server = createServer(app);
+
 // only listen to request when DB connection is established
 mongoose.connection.once('connected', () => {
   logger.info('⚡️[server]: Connected to MongoDB.');
-  app.listen(port, () => {
-    logger.info(`⚡️[server]: Server is running at http://localhost:${port}`);
+
+  // this could be an alternative to the above createServer line
+  // const server = app.listen(port, () => {
+  //   logger.info(`⚡️[server]: Server is running at http://localhost:${port}`);
+  // });
+
+  // invoke websocket server on top of http server
+  startWebSocketServer(server);
+
+  // start express http express server
+  // app.listen(port, () => {
+  //   logger.info(`⚡️[server]: Server is running at http://localhost:${port}`);
+  // });
+  // could do the above or start the http server with the following
+  server.listen(port, () => {
+    console.log(`⚡️[server]: Server is running at https://localhost:${port}`);
   });
 });
