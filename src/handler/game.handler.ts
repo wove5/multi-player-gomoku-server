@@ -1,4 +1,6 @@
 import express, { Request, Response } from 'express';
+import WebSocket from 'ws';
+import { wss } from '../websocket';
 
 import validateSchema from '../middleware/validateSchema';
 import { deserializeUser } from '../middleware/deserializeUser';
@@ -155,6 +157,11 @@ gameHandler.put(
     try {
       const result = await updateGame(req.params.id, req.userId, req.body);
       if (!result) return res.sendStatus(404);
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(result));
+        }
+      });
       return res.status(200).send(result);
     } catch (err: any) {
       console.log('server error');

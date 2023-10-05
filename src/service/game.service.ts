@@ -329,7 +329,7 @@ export async function updateGame(
       }
     } else {
       // a player is leaving
-      const doc = await GameModel.findOneAndUpdate(
+      await GameModel.findOneAndUpdate(
         {
           _id: new mongoose.Types.ObjectId(id),
           status: GAMESTATUS.ACTIVE,
@@ -337,16 +337,40 @@ export async function updateGame(
         },
         { $pull: { players: { userId: userId } } }
       );
-      console.log(`doc = ${doc}`);
+      const doc = await GameModel.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(id),
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'players.userId',
+            foreignField: '_id',
+            as: 'userDetail',
+            pipeline: [
+              {
+                $project: {
+                  _id: 0,
+                  userId: '$_id',
+                  username: 1,
+                },
+              },
+            ],
+          },
+        },
+      ]);
       if (doc) {
         console.log(`attempting to return a <GameStatus> object`);
-        return {
-          status: GAMESTATUS.ACTIVE,
-          player:
-            doc.selectedPositions.length === 0
-              ? POSITION_STATUS.BLACK
-              : doc.positions[doc.selectedPositions.slice(-1)[0]].status,
-        };
+        // return {
+        //   status: GAMESTATUS.ACTIVE,
+        //   player:
+        //     doc.selectedPositions.length === 0
+        //       ? POSITION_STATUS.BLACK
+        //       : doc.positions[doc.selectedPositions.slice(-1)[0]].status,
+        // };
+        return doc[0];
       } else {
         return null;
       }
