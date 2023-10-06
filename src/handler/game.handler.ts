@@ -159,7 +159,12 @@ gameHandler.put(
       if (!result) return res.sendStatus(404);
       wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify(result));
+          client.send(
+            JSON.stringify({
+              updatedBy: req.userId,
+              game: result,
+            })
+          );
         }
       });
       return res.status(200).send(result);

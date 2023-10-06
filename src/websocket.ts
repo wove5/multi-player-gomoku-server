@@ -19,6 +19,6 @@ export const startWebSocketServer = (server: Server) => {
       numberOfClients--;
       console.log(`A client has left, ${numberOfClients} client(s) connected`);
     });
-    ws.send('Welcome');
+    // ws.send('Welcome'); // commenting out for now because it results in error on client console.
   });
 };
