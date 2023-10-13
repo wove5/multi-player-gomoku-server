@@ -33,7 +33,7 @@ const UpdateGameReset = object({
 });
 
 const UpdateGameJoinLeave = object({
-  action: z.union([z.literal('JOIN'), z.literal('LEAVE')]),
+  action: z.union([z.literal('JOIN'), z.literal('LEAVE'), z.literal('REST')]),
 });
 
 const updateGamePayloadGeneral = {

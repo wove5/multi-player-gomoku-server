@@ -14,3 +14,17 @@ export enum GAMESTATUS {
   WON = 'WON',
   DRAWN = 'DRAWN',
 }
+
+export enum ACTION {
+  JOIN = 'JOIN',
+  REENTER = 'REENTER',
+  LEAVE = 'LEAVE',
+  MOVE = 'MOVE',
+  REST = 'REST',
+  RESET = 'RESET',
+}
+
+export enum PLAYER_STATE {
+  RESTING = 'RESTING',
+  PLAYING = 'PLAYING',
+}

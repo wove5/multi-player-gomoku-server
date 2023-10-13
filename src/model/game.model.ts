@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { PLAYER } from '../constants';
 
 enum POSITION_STATUS {
   BLACK = 'BLACK',
@@ -21,7 +22,9 @@ enum GAMESTATUS {
 export interface GameDocument {
   // userId: UserDocument['_id'];  // to use this, UserDocument interface will need an explicit _id property
   // _id: mongoose.Types.ObjectId;
-  players: [{ userId: mongoose.Types.ObjectId; color: SELPOS_STATUS }];
+  players: [
+    { userId: mongoose.Types.ObjectId; color: PLAYER; userName: string }
+  ];
   gameNumber: number;
   isMulti: boolean;
   size: number[];
@@ -42,6 +45,7 @@ const gameSchema = new mongoose.Schema(
         _id: false,
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         color: String,
+        userName: String,
       },
     ],
     gameNumber: Number,
