@@ -23,7 +23,11 @@ export interface GameDocument {
   // userId: UserDocument['_id'];  // to use this, UserDocument interface will need an explicit _id property
   // _id: mongoose.Types.ObjectId;
   players: [
-    { userId: mongoose.Types.ObjectId; color: PLAYER; userName: string }
+    {
+      userId: mongoose.Types.ObjectId;
+      color: POSITION_STATUS;
+      userName: string;
+    }
   ];
   gameNumber: number;
   isMulti: boolean;

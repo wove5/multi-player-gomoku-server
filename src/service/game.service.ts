@@ -1,27 +1,17 @@
-import { PlayerDetail } from './../types/PlayerDetail';
 // import { DocumentDefinition } from 'mongoose'; // mongoose ^6, it has its own types
 import NextGameNumberModel, {
   NextGameNumberDocument,
 } from '../model/nextGameNumber.model';
-import GameModel, { GameDocument } from '../model/game.model';
+import GameModel from '../model/game.model';
 import { POSITION_STATUS, GAMESTATUS, PLAYER, ACTION } from '../constants';
 import { PositionInfo } from '../types/PositionInfo';
 
 import mongoose from 'mongoose';
 import { CreateGameInput, UpdateGameInput } from '../schema/game.schema';
-import {
-  CompletedGameData,
-  IncompleteGameData,
-  JoinGameDBReply,
-  MoveDBReply,
-  LeaveGameDBReply,
-  ResetGameDBReply,
-  NoDBReply,
-  ReadGameDBReply,
-} from '../interfaces';
+import { CompletedGameData, JoinGameDBReply, NoDBReply } from '../interfaces';
 import gameWon from '../util/gameWon';
 // import { GameStatus } from '../types/GameStatus';
-import { GameStatus, UserDetail, UpdateGameDBReturnType } from '../types';
+import { UpdateGameDBReturnType } from '../types';
 import logger from '../util/logger';
 import UserModel from '../model/user.model';
 
@@ -222,7 +212,7 @@ export async function createGame(
     players: [
       {
         userId: new mongoose.Types.ObjectId(userId),
-        color: PLAYER.BLACK,
+        color: input.isMulti ? POSITION_STATUS.BLACK : POSITION_STATUS.NONE,
         userName: userDetail?.username,
       },
     ],
@@ -378,12 +368,18 @@ export async function updateGame(
       },
       {
         $project: {
-          // lastSelStatus: {
-          //   $arrayElemAt: [
-          //     '$positions.status',
-          //     { $last: '$selectedPositions' },
-          //   ],
-          // },
+          lastSelStatus: {
+            $cond: [
+              { $eq: [{ $size: '$selectedPositions' }, 0] },
+              POSITION_STATUS.NONE,
+              {
+                $arrayElemAt: [
+                  '$positions.status',
+                  { $last: '$selectedPositions' },
+                ],
+              },
+            ],
+          },
           playerColor: {
             $arrayElemAt: [
               '$players.color',
@@ -401,9 +397,26 @@ export async function updateGame(
               new mongoose.Types.ObjectId(input.id),
             ],
           },
+          isMulti: 1,
         },
       },
     ]);
+
+    // block player's attempt to make move ahead of their turn
+    if (
+      selContext[0].isMulti &&
+      (selContext[0].lastSelStatus === selContext[0].playerColor ||
+        (selContext[0].lastSelStatus === POSITION_STATUS.NONE &&
+          selContext[0].playerColor !== POSITION_STATUS.BLACK))
+    )
+      return {
+        action: ACTION.MOVE,
+        result: {
+          status: GAMESTATUS.ACTIVE,
+          // player: selContext[0].playerColor,
+          player: selContext[0].lastSelStatus,
+        },
+      };
 
     // formal query to try and update the selected position
     // console.log('about to try and do a move/update');
@@ -424,8 +437,8 @@ export async function updateGame(
       },
       {
         'positions.$.status':
-          // selContext[0].lastSelStatus === 'BLACK' ? 'WHITE' : 'BLACK',
-          selContext[0].playerColor,
+          selContext[0].lastSelStatus === 'BLACK' ? 'WHITE' : 'BLACK',
+        // selContext[0].playerColor,
         $push: {
           selectedPositions: selContext[0].currentSelIndex,
         },
@@ -445,6 +458,12 @@ export async function updateGame(
     // if (gameWon(selContext[0].currentSelIndex, doc.positions, doc.size)) {
     if (gameWon(doc.selectedPositions.slice(-1)[0], doc.positions, doc.size)) {
       console.log(
+        'doc.selectedPositions.slice(-1)[0] = ',
+        doc.selectedPositions.slice(-1)[0]
+      );
+      console.log(`doc.positions = ${doc.positions}`);
+      console.log(`doc.size = ${doc.size}`);
+      console.log(
         `gameWon(doc.selectedPositions.slice(-1)[0], doc.positions, doc.size): ${gameWon(
           doc.selectedPositions.slice(-1)[0],
           doc.positions,
@@ -461,7 +480,11 @@ export async function updateGame(
         action: ACTION.MOVE,
         result: {
           status: GAMESTATUS.WON,
-          player: doc.positions[doc.selectedPositions.slice(-1)[0]].status,
+          player:
+            doc.positions[doc.selectedPositions.slice(-1)[0]].status ===
+            POSITION_STATUS.BLACK
+              ? PLAYER.BLACK
+              : PLAYER.WHITE,
         },
       };
     } else if (doc.positions.length === doc.selectedPositions.length) {
@@ -475,7 +498,11 @@ export async function updateGame(
         action: ACTION.MOVE,
         result: {
           status: GAMESTATUS.DRAWN,
-          player: doc.positions[doc.selectedPositions.slice(-1)[0]].status,
+          player:
+            doc.positions[doc.selectedPositions.slice(-1)[0]].status ===
+            POSITION_STATUS.BLACK
+              ? PLAYER.BLACK
+              : PLAYER.WHITE,
         },
       };
     } else {
@@ -483,7 +510,12 @@ export async function updateGame(
         action: ACTION.MOVE,
         result: {
           status: GAMESTATUS.ACTIVE,
-          player: doc.positions[doc.selectedPositions.slice(-1)[0]].status,
+          player:
+            // ? doc.players.find((p) => p.userId.toString() !== userId).color
+            doc.positions[doc.selectedPositions.slice(-1)[0]].status ===
+            POSITION_STATUS.BLACK
+              ? PLAYER.WHITE
+              : PLAYER.BLACK,
         },
       };
     }

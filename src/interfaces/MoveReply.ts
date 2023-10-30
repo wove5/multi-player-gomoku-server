@@ -5,11 +5,11 @@ export interface MoveDBReply {
   action: ACTION;
   result: {
     status: GAMESTATUS;
-    player: POSITION_STATUS;
+    player: PLAYER;
   };
 }
 
 export interface MoveResponse {
   status: GAMESTATUS;
-  player: POSITION_STATUS;
+  player: PLAYER;
 }

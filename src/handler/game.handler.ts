@@ -1,5 +1,3 @@
-import { RestFromGameDBReply } from './../interfaces/RestFromGameReply';
-import { UserDetail } from './../types/UserDetail';
 import express, { Request, Response } from 'express';
 import WebSocket from 'ws';
 import { wss } from '../websocket';
@@ -270,7 +268,7 @@ gameHandler.put(
         // send game back to the requestor who has just joined
         if (!game) return res.sendStatus(404);
         // return res.status(200).send({ game, playerDetail: myOpponent });
-        return res.status(200).send(game);
+        return res.status(200).send({ game });
       } else if (isMoveDBReply(result)) {
         wss.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
@@ -327,6 +325,7 @@ gameHandler.put(
         });
         return res.status(200).send();
       } else if (isResetGameDBReply(result)) {
+        return res.status(200).send(result.result.game);
         // do something
       } else if (isNoDBReply(result)) {
         return res.sendStatus(404);
