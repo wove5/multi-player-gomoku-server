@@ -523,7 +523,7 @@ export async function updateGame(
     if (input.action === 'JOIN') {
       // a player is joining
       const userDetail = await UserModel.findById(userId);
-      const doc = await GameModel.findOneAndUpdate(
+      const game = await GameModel.findOneAndUpdate(
         {
           _id: new mongoose.Types.ObjectId(id),
           status: GAMESTATUS.ACTIVE,
@@ -672,7 +672,7 @@ export async function updateGame(
       // ]);
 
       // console.log(`doc = ${doc}`);
-      if (doc) {
+      if (game) {
         console.log(`attempting to return a <GameStatus> object`);
         // return {
         //   status: GAMESTATUS.ACTIVE,
@@ -683,7 +683,7 @@ export async function updateGame(
         // };
         return {
           action: ACTION.JOIN,
-          game: doc,
+          game,
         };
       } else {
         return { action: ACTION.JOIN, result: null };
