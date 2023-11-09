@@ -24,8 +24,6 @@ export interface UpdateResultDoc {
 }
 
 export async function getIncompleteGames(userId: string) {
-  // ): Promise<GameDocument[]> {
-  // return await GameModel.find({
   return await GameModel.aggregate([
     {
       $match: {
@@ -80,7 +78,6 @@ export async function getCompletedGames(
   return await GameModel.aggregate([
     {
       $match: {
-        // userId: new mongoose.Types.ObjectId(userId),
         'players.userId': new mongoose.Types.ObjectId(userId),
         status: { $ne: 'ACTIVE' },
       },
@@ -103,86 +100,22 @@ export async function getCompletedGames(
 export async function getGameById(
   id: string,
   userId: string
-  // ): Promise<GameDocument | null> {
-  //   return await GameModel.findOne({
-  //     _id: new mongoose.Types.ObjectId(id),
-  //     // 'players.userId': new mongoose.Types.ObjectId(userId),
-  //   }).lean();
-  // }
 ): Promise<JoinGameDBReply | NoDBReply> {
   const doc = await GameModel.findOne({
-    // $match: {
     _id: new mongoose.Types.ObjectId(id),
     'players.userId': new mongoose.Types.ObjectId(userId),
-    // players: {
-    //   $elemMatch: {
-    //     userId: new mongoose.Types.ObjectId(userId),
-    //   },
-    // },
     status: GAMESTATUS.ACTIVE,
-    // },
   });
 
-  // // how about just get all players userDetails, containing usernames, in one go
-  // const userDetails = await GameModel.aggregate([
-  //   {
-  //     $match: {
-  //       _id: new mongoose.Types.ObjectId(id),
-  //     },
-  //   },
-  //   {
-  //     $lookup: {
-  //       from: 'users',
-  //       localField: 'players.userId',
-  //       foreignField: '_id',
-  //       as: 'userDetail',
-  //       pipeline: [
-  //         {
-  //           $project: {
-  //             _id: 0,
-  //             userId: '$_id',
-  //             username: 1,
-  //           },
-  //         },
-  //       ],
-  //     },
-  //   },
-  //   {
-  //     $project: {
-  //       userDetail: 1,
-  //     },
-  //   },
-  // ]);
-  // console.log(`doc found: ${doc}`);
   if (doc) {
-    // console.log(`attempting to return a <GameStatus> object`);
-    // return doc;
     return {
       action: ACTION.REENTER,
       game: doc,
     };
   } else {
-    // return null;
     return { action: ACTION.REENTER, result: null };
   }
 }
-
-// if (doc) {
-//   console.log(`attempting to return a <GameStatus> object`);
-//   // return {
-//   //   status: GAMESTATUS.ACTIVE,
-//   //   player:
-//   //     doc.selectedPositions.length === 0
-//   //       ? POSITION_STATUS.BLACK
-//   //       : doc.positions[doc.selectedPositions.slice(-1)[0]].status,
-//   // };
-//   return {
-//     action: ACTION.JOIN,
-//     game: doc,
-//   };
-// } else {
-//   return { action: ACTION.JOIN, result: null };
-// }
 
 async function getNextSequence(name: string) {
   var ret: NextGameNumberDocument = await NextGameNumberModel.findOneAndUpdate(
@@ -224,142 +157,7 @@ export async function updateGame(
   userId: string,
   input: UpdateGameInput['body']
 ): Promise<UpdateGameDBReturnType> {
-  // | GameStatus
-  // | GameDocument
-  // JoinGameReply | MoveReply | LeaveGameReply | ResetGameReply | NoReply
-  // | UserDetail
-  // | null
   if ('id' in input) {
-    // formal query to try and update the selected position
-    // console.log('about to try and do a move/update');
-    console.log(`gameId = ${id}`);
-    // const doc = await GameModel.findOneAndUpdate(
-    //   {
-    //     _id: new mongoose.Types.ObjectId(id),
-    //     // 'players.userId': new mongoose.Types.ObjectId(userId),
-    //     positions: {
-    //       $elemMatch: {
-    //         _id: new mongoose.Types.ObjectId(input.id),
-    //         status: 'NONE',
-    //       },
-    //     },
-    //   },
-    //   // [
-    //   //   {
-    //   //     $set: {
-    //   //       players: {
-    //   //         $concatArrays: [
-    //   //           '$players',
-    //   //           [
-    //   //             {
-    //   //               userId: new mongoose.Types.ObjectId(userId),
-    //   //               color: {
-    //   //                 $cond: [
-    //   //                   { $eq: [{ $first: '$players.color' }, PLAYER.BLACK] },
-    //   //                   PLAYER.WHITE,
-    //   //                   PLAYER.BLACK,
-    //   //                 ],
-    //   //               },
-    //   //               userName: 'david',
-    //   //             },
-    //   //           ],
-    //   //         ],
-    //   //       },
-    //   //     },
-    //   //   },
-    //   // ],
-
-    //   // [
-    //   {
-    //     $set: {
-    //       // this one works when no brackets surround the { $set: }
-    //       'positions.$.status': PLAYER.BLACK, //{
-    //       //   $cond: [
-    //       //     {
-    //       //       $eq: [
-    //       //         {
-    //       //           $arrayElemAt: [
-    //       //             '$positions.status',
-    //       //             { $last: '$selectedPositions' },
-    //       //           ],
-    //       //         },
-    //       //         PLAYER.BLACK,
-    //       //         // PLAYER.BLACK,
-    //       //       ],
-    //       //     },
-    //       //     PLAYER.WHITE,
-    //       //     PLAYER.BLACK,
-    //       //   ],
-    //       // },
-    //       //   },
-    //       // },
-    //       // // [
-    //       // {
-    //       //   $set: {
-    //       // this one works only when brackets surround the { $set: }
-    //       selectedPositions: {
-    //         $concatArrays: [
-    //           '$selectedPositions',
-    //           // [77],
-    //           [
-    //             {
-    //               $indexOfArray: [
-    //                 '$positions._id',
-    //                 new mongoose.Types.ObjectId(input.id),
-    //               ],
-    //             },
-    //           ],
-    //         ],
-    //       },
-    //     },
-    //   },
-    //   // ],
-    //   // ],
-
-    //   //   currentSelIndex: {
-    //   //     $indexOfArray: [
-    //   //       '$positions._id',
-    //   //       new mongoose.Types.ObjectId(input.id),
-    //   //     ],
-    //   //   },
-    //   // ],
-
-    //   // $set: {
-    //   //   players: {
-    //   //     $concatArrays: [
-    //   //       '$players',
-    //   //       [
-    //   //         {
-    //   //           userId: new mongoose.Types.ObjectId(userId),
-    //   //           color: {
-    //   //             $cond: [
-    //   //               { $eq: [{ $first: '$players.color' }, PLAYER.BLACK] },
-    //   //               PLAYER.WHITE,
-    //   //               PLAYER.BLACK,
-    //   //             ],
-    //   //           },
-    //   //           userName: userDetail?.username,
-    //   //         },
-    //   //       ],
-    //   //     ],
-    //   //   },
-    //   // },
-
-    //   //       },
-    //   //     },
-    //   //   },
-    //   // ],
-    //   // {
-    //   //   'positions.$.status':
-    //   //     selContext[0].lastSelStatus === 'BLACK' ? 'WHITE' : 'BLACK',
-    //   //   $push: {
-    //   //     selectedPositions: selContext[0].currentSelIndex,
-    //   //   },
-    //   // },
-    //   { new: true } // new option to true to return the document after update was applied.
-    // );
-    // console.log('got through the move/update');
-
     const selContext = await GameModel.aggregate([
       {
         $match: {
@@ -413,13 +211,11 @@ export async function updateGame(
         action: ACTION.MOVE,
         result: {
           status: GAMESTATUS.ACTIVE,
-          // player: selContext[0].playerColor,
           player: selContext[0].lastSelStatus,
         },
       };
 
     // formal query to try and update the selected position
-    // console.log('about to try and do a move/update');
     const doc = await GameModel.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(id),
@@ -438,7 +234,6 @@ export async function updateGame(
       {
         'positions.$.status':
           selContext[0].lastSelStatus === 'BLACK' ? 'WHITE' : 'BLACK',
-        // selContext[0].playerColor,
         $push: {
           selectedPositions: selContext[0].currentSelIndex,
         },
@@ -455,7 +250,6 @@ export async function updateGame(
       `doc.selectedPositions.length = ${doc.selectedPositions.length}`
     );
 
-    // if (gameWon(selContext[0].currentSelIndex, doc.positions, doc.size)) {
     if (gameWon(doc.selectedPositions.slice(-1)[0], doc.positions, doc.size)) {
       console.log(
         'doc.selectedPositions.slice(-1)[0] = ',
@@ -511,7 +305,6 @@ export async function updateGame(
         result: {
           status: GAMESTATUS.ACTIVE,
           player:
-            // ? doc.players.find((p) => p.userId.toString() !== userId).color
             doc.positions[doc.selectedPositions.slice(-1)[0]].status ===
             POSITION_STATUS.BLACK
               ? PLAYER.WHITE
@@ -529,12 +322,6 @@ export async function updateGame(
           status: GAMESTATUS.ACTIVE,
           players: { $size: 1 },
           'players.userId': { $ne: userId },
-          // players: {
-          //   $size: 1,
-          //   $elemMatch: {
-          //     userId: new mongoose.Types.ObjectId(userId),
-          //   },
-          // },
         },
         [
           {
@@ -562,125 +349,8 @@ export async function updateGame(
         ],
         { new: true }
       );
-      // console.log('Did I make it to here?');
-      // // how about just get all players userDetails, containing usernames, in one go
-      // const userDetails = await GameModel.aggregate([
-      //   {
-      //     $match: {
-      //       _id: new mongoose.Types.ObjectId(id),
-      //     },
-      //   },
-      //   {
-      //     $lookup: {
-      //       from: 'users',
-      //       localField: 'players.userId',
-      //       foreignField: '_id',
-      //       as: 'userDetail',
-      //       pipeline: [
-      //         {
-      //           $project: {
-      //             _id: 0,
-      //             userId: '$_id',
-      //             username: 1,
-      //           },
-      //         },
-      //       ],
-      //     },
-      //   },
-      //   // {
-      //   //   $project: {
-      //   //     userDetail: 1,
-      //   //   },
-      //   // },
-      // ]);
-      // console.log(
-      //   `Object.entries(userDetails[0]) = ${Object.entries(userDetails[0])}`
-      // );
-      // console.log(`userDetails.gameNumber = ${userDetails[0].gameNumber}`);
-      // console.log('And what about here really??????');
-      // const userPlayerInfo = await GameModel.aggregate([
-      //   {
-      //     $match: {
-      //       _id: new mongoose.Types.ObjectId(id),
-      //     },
-      //   },
-      //   {
-      //     $lookup: {
-      //       from: 'users',
-      //       localField: 'players.userId',
-      //       foreignField: '_id',
-      //       as: 'userDetail',
-      //       pipeline: [
-      //         {
-      //           $project: {
-      //             _id: 0,
-      //             userId: '$_id',
-      //             username: 1,
-      //           },
-      //         },
-      //       ],
-      //     },
-      //   },
-      //   {
-      //     $set: {
-      //       usersPlayers: {
-      //         $concatArrays: ['$players', '$userDetail'],
-      //       },
-      //       // userDetail: 1,
-      //       // players: 1,
-      //     },
-      //   },
-      //   {
-      //     $project: {
-      //       _id: 0,
-      //       usersPlayers: 1,
-      //     },
-      //   },
-      //   {
-      //     $group: {
-      //       _id: '$userId',
-      //       userName: { $first: '$username' },
-      //       color: { $first: '$color' },
-      //     },
-      //   },
-      // ]);
 
-      // console.log(
-      //   `Object.entries(userPlayerInfo[0]) = ${Object.entries(
-      //     userPlayerInfo[0]
-      //   )}`
-      // );
-      // // do we want the other user; ie, our opponent who is already in the game?
-      // // we want to extract and send on our name to other player,
-      // // and we'll need the opponent's
-      // const otherUserId = doc?.players.find(
-      //   (p) => p.userId.toString() !== userId
-      // )?.userId;
-      // const userDetail: UserDetail[] = await UserModel.aggregate([
-      //   {
-      //     $match: {
-      //       _id: new mongoose.Types.ObjectId(otherUserId),
-      //     },
-      //   },
-      //   {
-      //     $project: {
-      //       // _id: 0, // may or may not need this?
-      //       userId: '$_id', //
-      //       username: 1,
-      //     },
-      //   },
-      // ]);
-
-      // console.log(`doc = ${doc}`);
       if (game) {
-        console.log(`attempting to return a <GameStatus> object`);
-        // return {
-        //   status: GAMESTATUS.ACTIVE,
-        //   player:
-        //     doc.selectedPositions.length === 0
-        //       ? POSITION_STATUS.BLACK
-        //       : doc.positions[doc.selectedPositions.slice(-1)[0]].status,
-        // };
         return {
           action: ACTION.JOIN,
           game,
@@ -688,7 +358,6 @@ export async function updateGame(
       } else {
         return { action: ACTION.JOIN, result: null };
       }
-      // } else {
     } else if (input.action === 'LEAVE') {
       // a player is leaving
       const doc = await GameModel.findOneAndUpdate(
@@ -698,59 +367,19 @@ export async function updateGame(
           'players.userId': userId,
         },
         { $pull: { players: { userId: userId } } }
-      ); // username of player leaving is needed below, so not using the new option here
+      ); // username of player leaving is needed below, so don't use "new" option here
 
-      // const doc = await GameModel.aggregate([
-      //   {
-      //     $match: {
-      //       _id: new mongoose.Types.ObjectId(id),
-      //     },
-      //   },
-      //   {
-      //     $lookup: {
-      //       from: 'users',
-      //       localField: 'players.userId',
-      //       foreignField: '_id',
-      //       as: 'userDetail',
-      //       pipeline: [
-      //         {
-      //           $project: {
-      //             _id: 0,
-      //             userId: '$_id',
-      //             username: 1,
-      //           },
-      //         },
-      //       ],
-      //     },
-      //   },
-      // ]);
-
-      // const userDetail: UserDetail[] = await UserModel.aggregate([
-      //   {
-      //     $match: {
-      //       _id: new mongoose.Types.ObjectId(userId),
-      //     },
-      //   },
-      //   {
-      //     $project: {
-      //       // _id: 0,
-      //       userId: '$_id',
-      //       username: 1,
-      //     },
-      //   },
-      // ]);
-
-      //
-      // const userLeaving = doc
-      //   ? doc.players.find((p) => p.userId.toString() === userId)
-      //   : null;
-
-      // if (userLeaving) {
-      //   return {
-      //     action: ACTION.LEAVE,
-      //     userLeaving: PlayerDetail,
-      //   };
       if (doc) {
+        if (doc.players.length === 1) {
+          // no players left in game; delete game and short circuit out of here
+          // a DeleteResult object is returned here; NB: no. of players is really 0 in DB
+          return await GameModel.deleteOne({
+            _id: new mongoose.Types.ObjectId(id),
+            status: GAMESTATUS.ACTIVE,
+            players: { $size: 0 },
+          });
+        }
+        // a player remains in game - return the fact
         return {
           action: ACTION.LEAVE,
           players: doc.players,
@@ -787,22 +416,6 @@ export async function updateGame(
       { new: true }
     );
 
-    // const userDetail = await UserModel.aggregate([
-    //   {
-    //     $match: {
-    //       _id: new mongoose.Types.ObjectId(userId),
-    //     },
-    //   },
-    //   {
-    //     $project: {
-    //       // _id: 0,
-    //       userId: '$_id',
-    //       username: 1,
-    //     },
-    //   },
-    // ]);
-
-    // return doc;
     if (doc) {
       return {
         action: ACTION.RESET,
@@ -816,6 +429,7 @@ export async function updateGame(
   }
 }
 
+// this is probably not getting used anymore and will likely get removed
 export async function deleteGame(id: string, userId: string) {
   return GameModel.deleteOne({
     _id: new mongoose.Types.ObjectId(id),

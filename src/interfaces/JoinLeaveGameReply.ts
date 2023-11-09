@@ -23,3 +23,8 @@ export interface LeaveGameResponse {
   // userDetail: UserDetail;
   players: PlayerDetail[];
 }
+
+export interface DeleteGameDBResult {
+  acknowledged: boolean;
+  deletedCount?: number;
+}

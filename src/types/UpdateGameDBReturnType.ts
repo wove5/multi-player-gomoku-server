@@ -1,7 +1,9 @@
+import mongoose, { Mongoose } from 'mongoose';
 import {
   JoinGameDBReply,
   MoveDBReply,
   LeaveGameDBReply,
+  DeleteGameDBResult,
   ResetGameDBReply,
   NoDBReply,
   RestFromGameDBReply,
@@ -13,5 +15,6 @@ export type UpdateGameDBReturnType =
   | MoveDBReply
   | TakeRestFromGameDBReply
   | LeaveGameDBReply
+  | DeleteGameDBResult
   | ResetGameDBReply
   | NoDBReply;

@@ -1,3 +1,4 @@
+import { DeleteGameDBResult } from './../interfaces/JoinLeaveGameReply';
 import express, { Request, Response } from 'express';
 import WebSocket from 'ws';
 import { wss } from '../websocket';
@@ -226,6 +227,9 @@ gameHandler.put(
       function isLeaveGameDBReply(res: any): res is LeaveGameDBReply {
         return res.action === ACTION.LEAVE;
       }
+      function isDeleteGameDBResult(res: any): res is DeleteGameDBResult {
+        return 'acknowledged' in res;
+      }
       function isMoveDBReply(res: any): res is MoveDBReply {
         return res.action === ACTION.MOVE;
       }
@@ -241,10 +245,6 @@ gameHandler.put(
       }
 
       if (isJoinGameDBReply(result)) {
-        // const me: PlayerDetail | undefined = result.game.players.find(
-        //   (p) => p.userId.toString() === req.userId
-        // );
-        // if (me === undefined) return res.sendStatus(404);
         if (!result) return res.sendStatus(404);
         wss.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
@@ -259,15 +259,9 @@ gameHandler.put(
           }
         });
 
-        // // send back game & userDetail of opponent in game just joined
-        // const myOpponent: PlayerDetail | undefined = result.game.players.find(
-        //   (p: PlayerDetail) => p.userId.toString() !== req.userId
-        // );
         const game = result.game;
-        // if (myOpponent === undefined) return res.sendStatus(404);
-        // send game back to the requestor who has just joined
         if (!game) return res.sendStatus(404);
-        // return res.status(200).send({ game, playerDetail: myOpponent });
+        // send game back to the requestor who has just joined
         return res.status(200).send(game);
       } else if (isMoveDBReply(result)) {
         wss.clients.forEach((client) => {
@@ -299,6 +293,12 @@ gameHandler.put(
           }
         });
         return res.status(200).send({ players: result.players });
+      } else if (isDeleteGameDBResult(result)) {
+        if (result.acknowledged && result.deletedCount === 1) {
+          return res.status(200);
+        } else {
+          return res.sendStatus(404);
+        }
       } else if (isTakeRestGameDBReply(result)) {
         wss.clients.forEach((client) => {
           // Clicking Leave in client browser triggers a LEAVE action to be
@@ -307,12 +307,10 @@ gameHandler.put(
           // clicked Leave is no longer in the players of that game, which is
           // made explicit by the result of the DB query which finds no doc for this
           // game containing the player who left, returning an object with no players.
-          // this works well for the client side browser in that it receive no redundant
+          // this works well for the client side browser in that it receives no redundant
           // ws message for the REST action.
           if ('players' in result) {
             if (client.readyState === WebSocket.OPEN) {
-              console.log(`Are we sending out 'Resting msg?`);
-              console.log(`result.action = ${result.action}`);
               client.send(
                 JSON.stringify({
                   updatedBy: req.userId,
