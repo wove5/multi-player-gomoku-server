@@ -279,6 +279,9 @@ export async function updateGame(
             POSITION_STATUS.BLACK
               ? PLAYER.BLACK
               : PLAYER.WHITE,
+          selectedPosId: input.id,
+          selectedPosIndex: selContext[0].currentSelIndex,
+          players: doc.players,
         },
       };
     } else if (doc.positions.length === doc.selectedPositions.length) {
@@ -297,6 +300,9 @@ export async function updateGame(
             POSITION_STATUS.BLACK
               ? PLAYER.BLACK
               : PLAYER.WHITE,
+          selectedPosId: input.id,
+          selectedPosIndex: selContext[0].currentSelIndex,
+          players: doc.players,
         },
       };
     } else {
@@ -309,6 +315,9 @@ export async function updateGame(
             POSITION_STATUS.BLACK
               ? PLAYER.WHITE
               : PLAYER.BLACK,
+          selectedPosId: input.id,
+          selectedPosIndex: selContext[0].currentSelIndex,
+          players: doc.players,
         },
       };
     }

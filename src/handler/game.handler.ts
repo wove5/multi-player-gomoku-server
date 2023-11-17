@@ -270,7 +270,12 @@ gameHandler.put(
               JSON.stringify({
                 updatedBy: req.userId,
                 // notify opponent
-                moveResult: result.result,
+                action: result.action,
+                selectedPosId: result.result.selectedPosId,
+                selectedPosIndex: result.result.selectedPosIndex,
+                status: result.result.status,
+                player: result.result.player,
+                players: result.result.players,
               })
             );
           }
