@@ -8,7 +8,12 @@ import { PositionInfo } from '../types/PositionInfo';
 
 import mongoose from 'mongoose';
 import { CreateGameInput, UpdateGameInput } from '../schema/game.schema';
-import { CompletedGameData, JoinGameDBReply, NoDBReply } from '../interfaces';
+import {
+  CompletedGameData,
+  NoDBReply,
+  RetrieveGameDBReply,
+  ReEnterGameDBReply,
+} from '../interfaces';
 import gameWon from '../util/gameWon';
 // import { GameStatus } from '../types/GameStatus';
 import { UpdateGameDBReturnType } from '../types';
@@ -97,10 +102,10 @@ export async function getCompletedGames(
   ]).sort({ updatedAt: -1 });
 }
 
-export async function getGameById(
+export async function getIncompleteGame(
   id: string,
   userId: string
-): Promise<JoinGameDBReply | NoDBReply> {
+): Promise<ReEnterGameDBReply | NoDBReply> {
   const doc = await GameModel.findOne({
     _id: new mongoose.Types.ObjectId(id),
     'players.userId': new mongoose.Types.ObjectId(userId),
@@ -114,6 +119,26 @@ export async function getGameById(
     };
   } else {
     return { action: ACTION.REENTER, result: null };
+  }
+}
+
+export async function getCompletedGame(
+  id: string,
+  userId: string
+): Promise<RetrieveGameDBReply | NoDBReply> {
+  const doc = await GameModel.findOne({
+    _id: new mongoose.Types.ObjectId(id),
+    'players.userId': new mongoose.Types.ObjectId(userId),
+    status: { $not: { $eq: GAMESTATUS.ACTIVE } },
+  });
+
+  if (doc) {
+    return {
+      action: ACTION.RETRIEVE,
+      game: doc,
+    };
+  } else {
+    return { action: ACTION.RETRIEVE, result: null };
   }
 }
 

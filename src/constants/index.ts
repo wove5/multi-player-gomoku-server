@@ -18,6 +18,7 @@ export enum GAMESTATUS {
 export enum ACTION {
   JOIN = 'JOIN',
   REENTER = 'REENTER',
+  RETRIEVE = 'RETRIEVE',
   LEAVE = 'LEAVE',
   MOVE = 'MOVE',
   REST = 'REST',

@@ -7,3 +7,4 @@ export * from './NoReply';
 export * from './ReadGameDBReply';
 export * from './ReadGameResponse';
 export * from './RestFromGameReply';
+export * from './GetGameReply';

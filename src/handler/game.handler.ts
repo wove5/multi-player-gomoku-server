@@ -22,7 +22,8 @@ import {
   createGame,
   updateGame,
   deleteGame,
-  getGameById,
+  getIncompleteGame,
+  getCompletedGame,
   UpdateResultDoc,
 } from '../service/game.service';
 import { GameDocument } from '../model/game.model';
@@ -40,6 +41,8 @@ import {
   NoDBReply,
   ResetGameDBReply,
   TakeRestFromGameDBReply,
+  ReEnterGameDBReply,
+  RetrieveGameDBReply,
   ReadGameDBReply,
   ReadGameResponse,
 } from '../interfaces';
@@ -130,23 +133,18 @@ gameHandler.get(
       const gameId = req.params.id;
 
       // you must already be in the game that you are trying to GET, otherwise, no result.
-      function isJoinGameDBReply(res: any): res is JoinGameDBReply {
+      function isReEnterGameDBReply(res: any): res is ReEnterGameDBReply {
         return res.action === ACTION.REENTER;
       }
       function isNoDBReply(res: any): res is NoDBReply {
         return res.result === null;
       }
 
-      const result: JoinGameDBReply | NoDBReply = await getGameById(
+      const result: JoinGameDBReply | NoDBReply = await getIncompleteGame(
         gameId,
         userId
       );
-      // if (!result) return res.sendStatus(404);
-      // const me: PlayerDetail | undefined = result.players.find(
-      //   (p: PlayerDetail) => p.userId.toString() === req.userId
-      // );
-      // if (me === undefined) return res.sendStatus(404);
-      if (isJoinGameDBReply(result)) {
+      if (isReEnterGameDBReply(result)) {
         wss.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
             client.send(
@@ -167,14 +165,6 @@ gameHandler.get(
       } else {
         throw new Error('Problem with server');
       }
-
-      // const myOpponent: PlayerDetail | undefined = result.players.find(
-      //   (p: PlayerDetail) => p.userId.toString() !== req.userId
-      // );
-      // const game = result;
-      // if (myOpponent === undefined) return res.sendStatus(404);
-      // if (!game) return res.sendStatus(404);
-      // return res.status(200).send({ game, userDetail: myOpponent });
     } catch (err: any) {
       return res.status(500).send(err);
     }
@@ -192,10 +182,18 @@ gameHandler.get(
     try {
       const userId = req.userId;
       const gameId = req.params.id;
+      function isRetrieveGameDBReply(res: any): res is RetrieveGameDBReply {
+        return res.action === ACTION.RETRIEVE;
+      }
+      function isNoDBReply(res: any): res is NoDBReply {
+        return res.result === null;
+      }
+      const result = await getCompletedGame(gameId, userId);
 
-      const game = await getGameById(gameId, userId);
-      if (!game) return res.sendStatus(404);
-      return res.status(200).json(game[0]);
+      console.log(`result = ${result}`);
+      if (isRetrieveGameDBReply(result)) {
+        return res.status(200).json(result.game);
+      } else if (isNoDBReply(result)) return res.sendStatus(404);
     } catch (err: any) {
       return res.status(500).send(err);
     }
