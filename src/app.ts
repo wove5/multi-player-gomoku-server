@@ -9,8 +9,11 @@ import connectDB from './util/connectDB';
 import logger from './util/logger';
 import gameHandler from './handler/game.handler';
 import authHandler from './handler/auth.handler';
+import { GameConnections } from './types';
 
 dotenv.config();
+
+const gameConnections: GameConnections = {};
 
 // connect to database
 connectDB();
@@ -44,7 +47,7 @@ mongoose.connection.once('connected', () => {
   // });
 
   // invoke websocket server on top of http server
-  startWebSocketServer(server);
+  startWebSocketServer(server, gameConnections);
 
   // start express http express server
   // app.listen(port, () => {

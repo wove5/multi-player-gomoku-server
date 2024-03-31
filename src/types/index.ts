@@ -5,3 +5,4 @@ export * from './UserDetail';
 export * from './UpdateGameDBReturnType';
 export * from './UpdateGameResponseType';
 export * from './PlayerDetail';
+export * from './GameConnections';
