@@ -7,6 +7,7 @@ import { URL } from 'node:url';
 import logger from './util/logger';
 import type NanoidLib from 'nanoid'; // this makes it possible to have a require statement; see next line
 import { verifyJwt } from './util/jwt';
+import { CustomWebSocketServer } from './classes';
 const { nanoid } = require('./esm/bundle') as typeof NanoidLib;
 
 interface TokenBody {
@@ -16,7 +17,8 @@ interface TokenBody {
   exp: number;
 }
 
-export let wss: WebSocket.Server;
+// export let wss: WebSocket.Server;
+export let wss: CustomWebSocketServer;
 
 let numberOfClients = 0;
 
@@ -24,7 +26,8 @@ export const startWebSocketServer = (
   server: Server,
   gameConnections: GameConnections
 ) => {
-  wss = new WebSocketServer({ server });
+  // wss = new WebSocketServer({ server });
+  wss = new CustomWebSocketServer(server);
   logger.info(`⚡️[websocket server]: websocket server started`);
   wss.on('connection', async (ws: ExtWebSocket, req) => {
     numberOfClients++;
@@ -57,6 +60,8 @@ export const startWebSocketServer = (
       let params = theURL.searchParams;
       gameId = params.get('gameId');
       if (gameId) {
+        ws.gameId = gameId;
+
         if (gameId in gameConnections) {
           gameConnections = {
             ...gameConnections,
@@ -77,6 +82,19 @@ export const startWebSocketServer = (
       const extClient = client as ExtWebSocket;
       console.log(`extClient.wsId = ${extClient.wsId}`);
       console.log(`extClient.userId = ${extClient.userId}`);
+    });
+
+    ws.on('message', (data) => {
+      [...wss.clients]
+        .filter(
+          (client) =>
+            client.gameId === ws.gameId &&
+            client.userId !== ws.userId &&
+            client.readyState === WebSocket.OPEN
+        )
+        .forEach((client) => {
+          client.send(data.toString());
+        });
     });
 
     ws.on('close', () => {
