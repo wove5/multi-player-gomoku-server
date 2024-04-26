@@ -1,4 +1,4 @@
-import type { Server } from 'http';
+import type { IncomingMessage, Server } from 'http';
 import { GameConnections } from './types';
 import { ExtWebSocket } from './interfaces';
 
@@ -27,15 +27,22 @@ export const startWebSocketServer = (
   gameConnections: GameConnections
 ) => {
   // wss = new WebSocketServer({ server });
-  wss = new CustomWebSocketServer(server);
+  // wss = new CustomWebSocketServer(server);
+  wss = new CustomWebSocketServer({ noServer: true });
   logger.info(`⚡️[websocket server]: websocket server started`);
-  wss.on('connection', async (ws: ExtWebSocket, req) => {
-    numberOfClients++;
+
+  server.on('upgrade', (req, socket, head) => {
     console.log(
-      `A new client has joined, ${numberOfClients} client(s) connected`
+      `request.headers['sec-websocket-protocol'] = ${req.headers['sec-websocket-protocol']}`
     );
-    ws.wsId = nanoid();
-    let decoded: TokenBody | null;
+    console.log(
+      `Object.getOwnPropertyNames(req.headers) = ${Object.getOwnPropertyNames(
+        req.headers
+      )}`
+    );
+    //TODO: restrict ws connections to clients using same origin
+    console.log(`req.headers.origin = ${req.headers.origin}`);
+
     const protocol: string | undefined = req.headers['sec-websocket-protocol'];
 
     const protocols = protocol
@@ -43,82 +50,107 @@ export const startWebSocketServer = (
       : [];
 
     const protocolWithToken = protocols.find((s: string) => {
-      decoded = verifyJwt<TokenBody>(s);
+      const decoded = verifyJwt<TokenBody>(s);
       return decoded !== null && decoded !== undefined;
     });
 
     console.log(`protocolWithToken = ${protocolWithToken}`);
-    if (protocolWithToken) {
-      decoded = verifyJwt<TokenBody>(protocolWithToken);
-      console.log(`decoded = ${decoded}`);
-      if (decoded) ws.userId = decoded._id;
-    }
-
-    let theURL = req.url ? new URL(`wss://localhost:8080${req.url}`) : null;
-    let gameId: string | null;
-    if (theURL) {
-      let params = theURL.searchParams;
-      gameId = params.get('gameId');
-      if (gameId) {
-        ws.gameId = gameId;
-
-        if (gameId in gameConnections) {
-          gameConnections = {
-            ...gameConnections,
-            gameId: gameConnections[gameId].add(ws.wsId),
-          };
-        } else {
-          gameConnections[gameId] = new Set([ws.wsId]);
-        }
-        console.log(
-          `websocket connections in game ${gameId}: ${[
-            ...gameConnections[gameId],
-          ]}`
-        );
-      }
-    }
-
-    wss.clients.forEach((client) => {
-      const extClient = client as ExtWebSocket;
-      console.log(`extClient.wsId = ${extClient.wsId}`);
-      console.log(`extClient.userId = ${extClient.userId}`);
-    });
-
-    ws.on('message', (data) => {
-      [...wss.clients]
-        .filter(
-          (client) =>
-            client.gameId === ws.gameId &&
-            client.userId !== ws.userId &&
-            client.readyState === WebSocket.OPEN
-        )
-        .forEach((client) => {
-          client.send(data.toString());
+    if (!protocolWithToken) {
+      logger.info(
+        `⚡️[websocket server]: a websocket connection request was denied`
+      );
+      socket.write('HTTP/1.1 401 Unauthorised\r\n\r\n');
+      socket.destroy();
+    } else {
+      const decoded = verifyJwt<TokenBody>(protocolWithToken);
+      if (decoded && decoded._id) {
+        wss.handleUpgrade(req, socket, head, (ws) => {
+          wss.emit('connection', ws, req, decoded?._id);
         });
-    });
+      } else {
+        socket.write('HTTP/1.1 401 Unauthorised\r\n\r\n');
+        socket.destroy();
+      }
+    }
+  });
 
-    ws.on('close', () => {
-      numberOfClients--;
-      console.log(`wss.clients = ${wss.clients}`);
-      if (gameId) {
-        gameConnections[gameId].delete(ws.wsId);
-        console.log(
-          `websocket connections in game ${gameId}: ${[
-            ...gameConnections[gameId],
-          ]}`
-        );
-        if (gameConnections[gameId].size === 0) {
-          console.log(`Deleting gameId: ${gameId} from gameConnections`);
-          delete gameConnections[gameId];
+  wss.on(
+    'connection',
+    async (ws: ExtWebSocket, req: IncomingMessage, userId: string) => {
+      numberOfClients++;
+      console.log(
+        `A new client has joined, ${numberOfClients} client(s) connected`
+      );
+      ws.wsId = nanoid();
+      if (userId) ws.userId = userId;
+      let theURL = req.url ? new URL(`wss://localhost:8080${req.url}`) : null;
+      let gameId: string | null;
+      if (theURL) {
+        let params = theURL.searchParams;
+        gameId = params.get('gameId');
+        if (gameId) {
+          ws.gameId = gameId;
+
+          if (gameId in gameConnections) {
+            gameConnections = {
+              ...gameConnections,
+              gameId: gameConnections[gameId].add(ws.wsId),
+            };
+          } else {
+            gameConnections[gameId] = new Set([ws.wsId]);
+          }
+          console.log(
+            `websocket connections in game ${gameId}: ${[
+              ...gameConnections[gameId],
+            ]}`
+          );
+        }
+      }
+
+      wss.clients.forEach((client) => {
+        const extClient = client as ExtWebSocket;
+        console.log(`extClient.wsId = ${extClient.wsId}`);
+        console.log(`extClient.userId = ${extClient.userId}`);
+      });
+
+      ws.on('message', (data) => {
+        [...wss.clients]
+          .filter(
+            (client) =>
+              client.gameId === ws.gameId &&
+              client.userId !== ws.userId &&
+              client.readyState === WebSocket.OPEN
+          )
+          .forEach((client) => {
+            client.send(data.toString());
+          });
+      });
+
+      ws.on('close', () => {
+        numberOfClients--;
+        console.log(`wss.clients = ${wss.clients}`);
+        if (gameId) {
+          gameConnections[gameId].delete(ws.wsId);
+          console.log(
+            `websocket connections in game ${gameId}: ${[
+              ...gameConnections[gameId],
+            ]}`
+          );
+          if (gameConnections[gameId].size === 0) {
+            console.log(`Deleting gameId: ${gameId} from gameConnections`);
+            delete gameConnections[gameId];
+          }
+          console.log(
+            `Is gameId ${gameId} in gameConnections? ${
+              gameId in gameConnections ? 'Yes' : 'No'
+            }`
+          );
         }
         console.log(
-          `Is gameId ${gameId} in gameConnections? ${
-            gameId in gameConnections ? 'Yes' : 'No'
-          }`
+          `A client has left, ${numberOfClients} client(s) connected`
         );
-      }
-      console.log(`A client has left, ${numberOfClients} client(s) connected`);
-    });
-    // ws.send('Welcome'); // commenting out for now because it results in error on client console.
-  });
+      });
+      // ws.send('Welcome'); // commenting out for now because it results in error on client console.
+    }
+  );
 };

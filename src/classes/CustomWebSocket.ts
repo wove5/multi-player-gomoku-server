@@ -1,4 +1,4 @@
-import { Server, WebSocket } from 'ws';
+import { WebSocket } from 'ws';
 
 export class CustomWebSocket extends WebSocket {
   wsId?: string;
