@@ -40,8 +40,27 @@ export const startWebSocketServer = (
         req.headers
       )}`
     );
-    //TODO: restrict ws connections to clients using same origin
+    console.log(`process.env.allowHost = ${process.env.allowHost}`);
+    // Provide CORS & SOP behaviour to websocket requests
+    // If testing with non-browser tool, craft an Origin Header as that of client or server URL, or just localhost.
+    // If process.env.allowHost is not present, then must be running in local dev mode
     console.log(`req.headers.origin = ${req.headers.origin}`);
+    console.log(`req.headers.host = ${req.headers.host}`);
+    const hostIp = req.headers.host?.split(':')[0];
+    console.log(`hostIp = ${hostIp}`);
+    if (
+      (process.env.allowHost !== undefined &&
+        process.env.allowHost !== req.headers.origin) ||
+      (req.headers.origin !== 'http://localhost:3000' &&
+        req.headers.origin !== `http://${hostIp}:3000`)
+    ) {
+      logger.info(
+        `⚡️[websocket server]: a websocket connection request was denied`
+      );
+      socket.write('HTTP/1.1 401 Unauthorised\r\n\r\n');
+      socket.destroy();
+      return;
+    }
 
     const protocol: string | undefined = req.headers['sec-websocket-protocol'];
 
