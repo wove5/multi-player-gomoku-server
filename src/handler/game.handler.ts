@@ -134,10 +134,10 @@ gameHandler.get(
 
       // you must already be in the game that you are trying to GET, otherwise, no result.
       function isReEnterGameDBReply(res: any): res is ReEnterGameDBReply {
-        return res.action === ACTION.REENTER;
+        return res.action === ACTION.REENTER && res.game;
       }
       function isNoDBReply(res: any): res is NoDBReply {
-        return res.result === null;
+        return res.action === ACTION.REENTER && res.result === null;
       }
 
       const result: JoinGameDBReply | NoDBReply = await getIncompleteGame(
@@ -183,17 +183,20 @@ gameHandler.get(
       const userId = req.userId;
       const gameId = req.params.id;
       function isRetrieveGameDBReply(res: any): res is RetrieveGameDBReply {
-        return res.action === ACTION.RETRIEVE;
+        return res.action === ACTION.RETRIEVE && res.game;
       }
       function isNoDBReply(res: any): res is NoDBReply {
-        return res.result === null;
+        return res.action === ACTION.RETRIEVE && res.result === null;
       }
       const result = await getCompletedGame(gameId, userId);
 
-      console.log(`result = ${result}`);
       if (isRetrieveGameDBReply(result)) {
         return res.status(200).json(result.game);
-      } else if (isNoDBReply(result)) return res.sendStatus(404);
+      } else if (isNoDBReply(result)) {
+        return res.sendStatus(404);
+      } else {
+        throw new Error('Problem with server');
+      }
     } catch (err: any) {
       return res.status(500).send(err);
     }

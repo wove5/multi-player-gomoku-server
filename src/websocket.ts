@@ -1,6 +1,11 @@
 import type { IncomingMessage, Server } from 'http';
 import { GameConnections } from './types';
-import { ExtWebSocket } from './interfaces';
+import {
+  ExtWebSocket,
+  JoinGameDBReply,
+  NoDBReply,
+  ReEnterGameDBReply,
+} from './interfaces';
 
 import WebSocket, { WebSocketServer } from 'ws';
 import { URL } from 'node:url';
@@ -8,6 +13,8 @@ import logger from './util/logger';
 import type NanoidLib from 'nanoid'; // this makes it possible to have a require statement; see next line
 import { verifyJwt } from './util/jwt';
 import { CustomWebSocketServer } from './classes';
+import { ACTION } from './constants';
+import { getIncompleteGame } from './service/game.service';
 const { nanoid } = require('./esm/bundle') as typeof NanoidLib;
 
 interface TokenBody {
@@ -31,7 +38,7 @@ export const startWebSocketServer = (
   wss = new CustomWebSocketServer({ noServer: true });
   logger.info(`⚡️[websocket server]: websocket server started`);
 
-  server.on('upgrade', (req, socket, head) => {
+  server.on('upgrade', async (req, socket, head) => {
     console.log(
       `request.headers['sec-websocket-protocol'] = ${req.headers['sec-websocket-protocol']}`
     );
@@ -41,11 +48,12 @@ export const startWebSocketServer = (
       )}`
     );
     console.log(`process.env.allowHost = ${process.env.allowHost}`);
-    // Provide CORS & SOP behaviour to websocket requests
-    // If testing with non-browser tool, craft an Origin Header as that of client or server URL, or just localhost.
-    // If process.env.allowHost is not present, then must be running in local dev mode
     console.log(`req.headers.origin = ${req.headers.origin}`);
     console.log(`req.headers.host = ${req.headers.host}`);
+
+    // Provide CORS & SOP behaviour to websocket requests
+    // When testing with non-browser tool, craft an Origin Header as that of client or server URL, or just http://localhost:3000
+    // If process.env.allowHost is not present, then must be running in local dev mode
     const hostIp = req.headers.host?.split(':')[0];
     console.log(`hostIp = ${hostIp}`);
     if (
@@ -55,81 +63,125 @@ export const startWebSocketServer = (
         req.headers.origin !== `http://${hostIp}:3000`)
     ) {
       logger.info(
-        `⚡️[websocket server]: a websocket connection request was denied`
+        `⚡️[websocket server]: an unauthorised websocket connection request was denied`
       );
       socket.write('HTTP/1.1 401 Unauthorised\r\n\r\n');
       socket.destroy();
       return;
     }
 
+    // Screen ws connection request to only allow an authenticated client
     const protocol: string | undefined = req.headers['sec-websocket-protocol'];
-
     const protocols = protocol
       ? protocol.split(',').map((s: string) => s.trim())
       : [];
-
     const protocolWithToken = protocols.find((s: string) => {
       const decoded = verifyJwt<TokenBody>(s);
       return decoded !== null && decoded !== undefined;
     });
-
     console.log(`protocolWithToken = ${protocolWithToken}`);
-    if (!protocolWithToken) {
+    const decoded = protocolWithToken
+      ? verifyJwt<TokenBody>(protocolWithToken)
+      : null;
+    if (!decoded || !decoded._id) {
       logger.info(
-        `⚡️[websocket server]: a websocket connection request was denied`
+        `⚡️[websocket server]: websocket connection request denied to unauthenticated client`
       );
-      socket.write('HTTP/1.1 401 Unauthorised\r\n\r\n');
+      socket.write('HTTP/1.1 401 Unauthenticated - invalid token\r\n\r\n');
       socket.destroy();
-    } else {
-      const decoded = verifyJwt<TokenBody>(protocolWithToken);
-      if (decoded && decoded._id) {
-        wss.handleUpgrade(req, socket, head, (ws) => {
-          wss.emit('connection', ws, req, decoded?._id);
-        });
+      return;
+    }
+
+    // screen the ws connection request to only allow client if they belong in game with gameId
+    const theURL = req.url ? new URL(`wss://localhost:8080${req.url}`) : null;
+    if (theURL) {
+      const params = theURL.searchParams;
+      const gameId = params.get('gameId');
+      if (gameId) {
+        // isReEnterGameDBReply may sound misleading here, but its matching response will confirm this client belongs to this game.
+        function isReEnterGameDBReply(res: any): res is ReEnterGameDBReply {
+          return res.action === ACTION.REENTER && res.game;
+        }
+        function isNoDBReply(res: any): res is NoDBReply {
+          return res.action === ACTION.REENTER && res.result === null;
+        }
+
+        const result: JoinGameDBReply | NoDBReply = await getIncompleteGame(
+          gameId,
+          decoded._id
+        );
+        // Confirm that client with valid token decoded._id belongs in game with gameId
+        if (isReEnterGameDBReply(result)) {
+          console.log('Client successfully entered game.');
+          wss.handleUpgrade(req, socket, head, (ws) => {
+            wss.emit('connection', ws, req, decoded._id, gameId);
+          });
+        } else if (isNoDBReply(result)) {
+          logger.info(
+            `⚡️[websocket server]: websocket connection request denied to unauthorised client`
+          );
+          socket.write(
+            'HTTP/1.1 404 Not Found - game with user not found.\r\n\r\n'
+          );
+          socket.destroy();
+        } else {
+          logger.info(
+            `⚡️[websocket server]: problem with server during websocket connection request`
+          );
+          socket.write('HTTP/1.1 500 Problem at server\r\n\r\n');
+          socket.destroy();
+        }
       } else {
-        socket.write('HTTP/1.1 401 Unauthorised\r\n\r\n');
+        logger.info(
+          `⚡️[websocket server]: websocket connection request denied to unauthorised client`
+        );
+        socket.write(
+          'HTTP/1.1 403 Unauthorised - invalid URL; no gameId\r\n\r\n'
+        );
         socket.destroy();
       }
+    } else {
+      logger.info(
+        `⚡️[websocket server]: websocket connection request denied to unauthorised client`
+      );
+      socket.write('HTTP/1.1 403 Unauthorised - invalid URL\r\n\r\n');
+      socket.destroy();
     }
   });
 
   wss.on(
     'connection',
-    async (ws: ExtWebSocket, req: IncomingMessage, userId: string) => {
+    async (
+      ws: ExtWebSocket,
+      req: IncomingMessage,
+      userId: string,
+      gameId: string
+    ) => {
       numberOfClients++;
       console.log(
         `A new client has joined, ${numberOfClients} client(s) connected`
       );
       ws.wsId = nanoid();
-      if (userId) ws.userId = userId;
-      let theURL = req.url ? new URL(`wss://localhost:8080${req.url}`) : null;
-      let gameId: string | null;
-      if (theURL) {
-        let params = theURL.searchParams;
-        gameId = params.get('gameId');
-        if (gameId) {
-          ws.gameId = gameId;
+      ws.userId = userId;
+      ws.gameId = gameId;
 
-          if (gameId in gameConnections) {
-            gameConnections = {
-              ...gameConnections,
-              gameId: gameConnections[gameId].add(ws.wsId),
-            };
-          } else {
-            gameConnections[gameId] = new Set([ws.wsId]);
-          }
-          console.log(
-            `websocket connections in game ${gameId}: ${[
-              ...gameConnections[gameId],
-            ]}`
-          );
-        }
+      if (gameId in gameConnections) {
+        gameConnections = {
+          ...gameConnections,
+          gameId: gameConnections[gameId].add(ws.wsId),
+        };
+      } else {
+        gameConnections[gameId] = new Set([ws.wsId]);
       }
+      console.log(
+        `websocket connections in game ${gameId}: ${[
+          ...gameConnections[gameId],
+        ]}`
+      );
 
       wss.clients.forEach((client) => {
-        const extClient = client as ExtWebSocket;
-        console.log(`extClient.wsId = ${extClient.wsId}`);
-        console.log(`extClient.userId = ${extClient.userId}`);
+        console.log(`client.wsId = ${client.wsId}`);
+        console.log(`client.userId = ${client.userId}`);
       });
 
       ws.on('message', (data) => {
