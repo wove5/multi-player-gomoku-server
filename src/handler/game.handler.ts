@@ -145,8 +145,14 @@ gameHandler.get(
         userId
       );
       if (isReEnterGameDBReply(result)) {
-        wss.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
+        [...wss.clients]
+          .filter(
+            (client) =>
+              client.gameId === req.params.id &&
+              client.userId !== req.userId &&
+              client.readyState === WebSocket.OPEN
+          )
+          .forEach((client) => {
             client.send(
               JSON.stringify({
                 updatedBy: req.userId,
@@ -157,8 +163,7 @@ gameHandler.get(
                 players: result.game.players,
               })
             );
-          }
-        });
+          });
         return res.status(200).send(result.game);
       } else if (isNoDBReply(result)) {
         return res.sendStatus(404);
@@ -247,8 +252,14 @@ gameHandler.put(
 
       if (isJoinGameDBReply(result)) {
         if (!result) return res.sendStatus(404);
-        wss.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
+        [...wss.clients]
+          .filter(
+            (client) =>
+              client.gameId === req.params.id &&
+              client.userId !== req.userId &&
+              client.readyState === WebSocket.OPEN
+          )
+          .forEach((client) => {
             client.send(
               JSON.stringify({
                 updatedBy: req.userId,
@@ -257,16 +268,21 @@ gameHandler.put(
                 players: result.game.players,
               })
             );
-          }
-        });
+          });
 
         const game = result.game;
         if (!game) return res.sendStatus(404);
         // send game back to the requestor who has just joined
         return res.status(200).send(game);
       } else if (isMoveDBReply(result)) {
-        wss.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
+        [...wss.clients]
+          .filter(
+            (client) =>
+              client.gameId === req.params.id &&
+              client.userId !== req.userId &&
+              client.readyState === WebSocket.OPEN
+          )
+          .forEach((client) => {
             client.send(
               JSON.stringify({
                 updatedBy: req.userId,
@@ -279,15 +295,19 @@ gameHandler.put(
                 players: result.result.players,
               })
             );
-          }
-        });
+          });
         return res
           .status(200)
           .send({ status: result.result.status, player: result.result.player });
       } else if (isLeaveGameDBReply(result)) {
-        wss.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            console.log(`Are we sending out 'Left' msg?`);
+        [...wss.clients]
+          .filter(
+            (client) =>
+              client.gameId === req.params.id &&
+              client.userId !== req.userId &&
+              client.readyState === WebSocket.OPEN
+          )
+          .forEach((client) => {
             client.send(
               JSON.stringify({
                 updatedBy: req.userId,
@@ -296,8 +316,7 @@ gameHandler.put(
                 players: result.players,
               })
             );
-          }
-        });
+          });
         return res.status(200).send({ players: result.players });
       } else if (isDeleteGameDBResult(result)) {
         if (result.acknowledged && result.deletedCount === 1) {
@@ -306,17 +325,23 @@ gameHandler.put(
           return res.sendStatus(404);
         }
       } else if (isTakeRestGameDBReply(result)) {
-        wss.clients.forEach((client) => {
-          // Clicking Leave in client browser triggers a LEAVE action to be
-          // sent from server, then, in the useEffect cleanup fnc, restFromGame()
-          // triggers a REST action to be sent from server, however, the player who
-          // clicked Leave is no longer in the players of that game, which is
-          // made explicit by the result of the DB query which finds no doc for this
-          // game containing the player who left, returning an object with no players.
-          // this works well for the client side browser in that it receives no redundant
-          // ws message for the REST action.
-          if ('players' in result) {
-            if (client.readyState === WebSocket.OPEN) {
+        // Clicking Leave in client browser triggers a LEAVE action to be
+        // sent from server, then, in the useEffect cleanup fnc, restFromGame()
+        // triggers a REST action to be sent from server, however, the player who
+        // clicked Leave is no longer in the players of that game, which is
+        // made explicit by the result of the DB query which finds no doc for this
+        // game containing the player who left, returning an object with no players prop.
+        // This works well for the client side browser in that it receives no redundant
+        // ws message for the REST action.
+        if ('players' in result) {
+          [...wss.clients]
+            .filter(
+              (client) =>
+                client.gameId === req.params.id &&
+                client.userId !== req.userId &&
+                client.readyState === WebSocket.OPEN
+            )
+            .forEach((client) => {
               client.send(
                 JSON.stringify({
                   updatedBy: req.userId,
@@ -324,9 +349,8 @@ gameHandler.put(
                   players: result.players,
                 })
               );
-            }
-          }
-        });
+            });
+        }
         return res.status(200).send();
       } else if (isResetGameDBReply(result)) {
         return res.status(200).send(result.result.game);
