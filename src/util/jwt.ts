@@ -5,7 +5,7 @@ export const signJwt = (payload: Object, options: SignOptions = {}) => {
   return jwt.sign(payload, privateKey, {
     ...(options && options),
     algorithm: 'RS256',
-    expiresIn: '2h',
+    expiresIn: '1h',
   });
 };
 

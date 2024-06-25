@@ -12,7 +12,7 @@ import { URL } from 'node:url';
 import logger from './util/logger';
 import type NanoidLib from 'nanoid'; // this makes it possible to have a require statement; see next line
 import { verifyJwt } from './util/jwt';
-import { CustomWebSocketServer } from './classes';
+import { CustomWebSocket, CustomWebSocketServer } from './classes';
 import { ACTION } from './constants';
 import { getIncompleteGame } from './service/game.service';
 const { nanoid } = require('./esm/bundle') as typeof NanoidLib;
@@ -97,7 +97,7 @@ export const startWebSocketServer = (
     if (theURL) {
       const params = theURL.searchParams;
       const gameId = params.get('gameId');
-      if (gameId) {
+      if (gameId !== undefined && gameId !== null && gameId !== '') {
         // isReEnterGameDBReply may sound misleading here, but its matching response will confirm this client belongs to this game.
         function isReEnterGameDBReply(res: any): res is ReEnterGameDBReply {
           return res.action === ACTION.REENTER && res.game;
@@ -152,18 +152,33 @@ export const startWebSocketServer = (
   wss.on(
     'connection',
     async (
-      ws: ExtWebSocket,
+      // ws: ExtWebSocket,
+      ws: CustomWebSocket,
       req: IncomingMessage,
       userId: string,
       gameId: string
     ) => {
       numberOfClients++;
-      console.log(
-        `A new client has joined, ${numberOfClients} client(s) connected`
-      );
       ws.wsId = nanoid();
       ws.userId = userId;
       ws.gameId = gameId;
+      console.log(
+        `New client at wsId: ${ws.wsId} / userId: ${ws.userId} has joined`
+      );
+      console.log(`${numberOfClients} client(s) connected`);
+
+      // function heartbeat() {
+      //   this.isAlive = true;
+      // }
+      ws.isAlive = true;
+      ws.on('error', console.error);
+      // ws.on('pong', heartbeat);
+      ws.on('pong', () => {
+        console.log(
+          `incoming pong from wsId: ${ws.wsId} / userId: ${ws.userId}`
+        );
+        ws.isAlive = true;
+      });
 
       if (gameId in gameConnections) {
         gameConnections = {
@@ -185,6 +200,7 @@ export const startWebSocketServer = (
       });
 
       ws.on('message', (data) => {
+        console.log(`incoming msg: ${data.toString()}`);
         [...wss.clients]
           .filter(
             (client) =>
@@ -200,7 +216,7 @@ export const startWebSocketServer = (
       ws.on('close', () => {
         numberOfClients--;
         console.log(`wss.clients = ${wss.clients}`);
-        if (gameId) {
+        if (gameId && ws.wsId) {
           gameConnections[gameId].delete(ws.wsId);
           console.log(
             `websocket connections in game ${gameId}: ${[
@@ -218,10 +234,29 @@ export const startWebSocketServer = (
           );
         }
         console.log(
-          `A client has left, ${numberOfClients} client(s) connected`
+          `client at wsId: ${ws.wsId} / userId: ${ws.userId} has left`
         );
+        console.log(`${numberOfClients} client(s) connected`);
       });
       // ws.send('Welcome'); // commenting out for now because it results in error on client console.
     }
   );
+
+  const interval = setInterval(function ping() {
+    wss.clients.forEach(function each(ws) {
+      if (ws.isAlive === false) {
+        console.log(`closing wsId: ${ws.wsId} / userId: ${ws.userId}`);
+        return ws.terminate();
+      }
+
+      ws.isAlive = false;
+      ws.send(JSON.stringify({ action: 'ping', userId: ws.userId }));
+      console.log(`sending ping to wsId: ${ws.wsId} / useId: ${ws.userId}`);
+      ws.ping();
+    });
+  }, 10000);
+
+  wss.on('close', function close() {
+    clearInterval(interval);
+  });
 };
