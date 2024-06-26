@@ -59,7 +59,8 @@ export const startWebSocketServer = (
     if (
       (process.env.allowHost !== undefined &&
         process.env.allowHost !== req.headers.origin) ||
-      (req.headers.origin !== 'http://localhost:3000' &&
+      (process.env.allowHost === undefined &&
+        req.headers.origin !== 'http://localhost:3000' &&
         req.headers.origin !== `http://${hostIp}:3000`)
     ) {
       logger.info(
