@@ -46,6 +46,7 @@ import {
   ReadGameDBReply,
   ReadGameResponse,
 } from '../interfaces';
+import logger from '../util/logger';
 
 const gameHandler = express.Router();
 
@@ -166,6 +167,9 @@ gameHandler.get(
           });
         return res.status(200).send(result.game);
       } else if (isNoDBReply(result)) {
+        logger.info(
+          `⚡️[server]: Incomplete Game, gameId ${gameId}, not found.`
+        );
         return res.sendStatus(404);
       } else {
         throw new Error('Problem with server');
