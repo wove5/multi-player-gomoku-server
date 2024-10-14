@@ -92,7 +92,6 @@ export const startWebSocketServer = (
       socket.destroy();
       return;
     }
-
     // screen the ws connection request to only allow client if they belong in game with gameId
     const theURL = req.url ? new URL(`wss://localhost:8080${req.url}`) : null;
     if (theURL) {
@@ -115,7 +114,7 @@ export const startWebSocketServer = (
         if (isReEnterGameDBReply(result)) {
           console.log('Client successfully entered game.');
           wss.handleUpgrade(req, socket, head, (ws) => {
-            wss.emit('connection', ws, req, decoded._id, gameId);
+            wss.emit('connection', ws, req, decoded._id, gameId, decoded.exp);
           });
         } else if (isNoDBReply(result)) {
           logger.info(
@@ -150,6 +149,7 @@ export const startWebSocketServer = (
     }
   });
 
+  // args set in handleUpgrade above: wss.emit('connection', ws, req, decoded._id, gameId, decoded.exp)
   wss.on(
     'connection',
     async (
@@ -157,12 +157,14 @@ export const startWebSocketServer = (
       ws: CustomWebSocket,
       req: IncomingMessage,
       userId: string,
-      gameId: string
+      gameId: string,
+      expTime: number
     ) => {
       numberOfClients++;
       ws.wsId = nanoid();
       ws.userId = userId;
       ws.gameId = gameId;
+      ws.expTime = expTime * 1000;
       console.log(
         `New client at wsId: ${ws.wsId} / userId: ${ws.userId} has joined`
       );
@@ -245,7 +247,7 @@ export const startWebSocketServer = (
 
   const interval = setInterval(function ping() {
     wss.clients.forEach(function each(ws) {
-      if (ws.isAlive === false) {
+      if (ws.isAlive === false || Date.now() > ws.expTime) {
         console.log(`closing wsId: ${ws.wsId} / userId: ${ws.userId}`);
         return ws.terminate();
       }

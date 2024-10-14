@@ -5,4 +5,5 @@ export interface ExtWebSocket extends WebSocket {
   gameId: string;
   userId: string;
   isAlive: boolean;
+  expTime: number;
 }
