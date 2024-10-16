@@ -1,20 +1,12 @@
 import type { IncomingMessage, Server } from 'http';
 import { GameConnections } from './types';
-import {
-  ExtWebSocket,
-  JoinGameDBReply,
-  NoDBReply,
-  ReEnterGameDBReply,
-} from './interfaces';
-
 import WebSocket, { WebSocketServer } from 'ws';
 import { URL } from 'node:url';
 import logger from './util/logger';
 import type NanoidLib from 'nanoid'; // this makes it possible to have a require statement; see next line
 import { verifyJwt } from './util/jwt';
 import { CustomWebSocket, CustomWebSocketServer } from './classes';
-import { ACTION } from './constants';
-import { getIncompleteGame } from './service/game.service';
+import { getCompletedGames, getIncompleteGames } from './service/game.service';
 const { nanoid } = require('./esm/bundle') as typeof NanoidLib;
 
 interface TokenBody {
@@ -98,37 +90,28 @@ export const startWebSocketServer = (
       const params = theURL.searchParams;
       const gameId = params.get('gameId');
       if (gameId !== undefined && gameId !== null && gameId !== '') {
-        // isReEnterGameDBReply may sound misleading here, but its matching response will confirm this client belongs to this game.
-        function isReEnterGameDBReply(res: any): res is ReEnterGameDBReply {
-          return res.action === ACTION.REENTER && res.game;
-        }
-        function isNoDBReply(res: any): res is NoDBReply {
-          return res.action === ACTION.REENTER && res.result === null;
-        }
-
-        const result: JoinGameDBReply | NoDBReply = await getIncompleteGame(
-          gameId,
-          decoded._id
-        );
+        const incompleteGames = await getIncompleteGames(decoded._id);
+        const completedGames = await getCompletedGames(decoded._id);
         // Confirm that client with valid token decoded._id belongs in game with gameId
-        if (isReEnterGameDBReply(result)) {
+        const completedGame = completedGames
+          .map((g) => g._id.toString())
+          .find((gId) => gId === gameId);
+        const incompleteGame = incompleteGames
+          .map((g) => g._id.toString())
+          .find((gId) => gId === gameId);
+
+        if (completedGame || incompleteGame) {
           console.log('Client successfully entered game.');
           wss.handleUpgrade(req, socket, head, (ws) => {
             wss.emit('connection', ws, req, decoded._id, gameId, decoded.exp);
           });
-        } else if (isNoDBReply(result)) {
+        } else {
           logger.info(
             `⚡️[websocket server]: websocket connection request denied to unauthorised client`
           );
           socket.write(
             'HTTP/1.1 404 Not Found - game with user not found.\r\n\r\n'
           );
-          socket.destroy();
-        } else {
-          logger.info(
-            `⚡️[websocket server]: problem with server during websocket connection request`
-          );
-          socket.write('HTTP/1.1 500 Problem at server\r\n\r\n');
           socket.destroy();
         }
       } else {
@@ -142,7 +125,7 @@ export const startWebSocketServer = (
       }
     } else {
       logger.info(
-        `⚡️[websocket server]: websocket connection request denied to unauthorised client`
+        `⚡️[websocket server]: 4websocket connection request denied to unauthorised client`
       );
       socket.write('HTTP/1.1 403 Unauthorised - invalid URL\r\n\r\n');
       socket.destroy();
