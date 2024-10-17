@@ -13,6 +13,7 @@ import {
   NoDBReply,
   RetrieveGameDBReply,
   ReEnterGameDBReply,
+  IncompleteGameData,
 } from '../interfaces';
 import gameWon from '../util/gameWon';
 // import { GameStatus } from '../types/GameStatus';
@@ -28,7 +29,9 @@ export interface UpdateResultDoc {
   nModified: number;
 }
 
-export async function getIncompleteGames(userId: string) {
+export async function getIncompleteGames(
+  userId: string
+): Promise<IncompleteGameData[]> {
   return await GameModel.aggregate([
     {
       $match: {

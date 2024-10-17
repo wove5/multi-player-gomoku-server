@@ -5,6 +5,6 @@ export class CustomWebSocketServer extends WebSocketServer<
   typeof CustomWebSocket
 > {
   constructor(options: ServerOptions) {
-    super({ WebSocket: CustomWebSocket, ...options });
+    super({ ...options, WebSocket: CustomWebSocket });
   }
 }
