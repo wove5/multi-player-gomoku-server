@@ -2,7 +2,7 @@
 import NextGameNumberModel, {
   NextGameNumberDocument,
 } from '../model/nextGameNumber.model';
-import GameModel from '../model/game.model';
+import GameModel, { GameDocument } from '../model/game.model';
 import { POSITION_STATUS, GAMESTATUS, PLAYER, ACTION } from '../constants';
 import { PositionInfo } from '../types/PositionInfo';
 
@@ -13,13 +13,10 @@ import {
   NoDBReply,
   RetrieveGameDBReply,
   ReEnterGameDBReply,
-  IncompleteGameData,
 } from '../interfaces';
 import gameWon from '../util/gameWon';
-// import { GameStatus } from '../types/GameStatus';
 import { UpdateGameDBReturnType } from '../types';
 import logger from '../util/logger';
-import UserModel from '../model/user.model';
 
 // mongoose.set('debug', true);
 
@@ -29,55 +26,75 @@ export interface UpdateResultDoc {
   nModified: number;
 }
 
+// create & read queries made on the game model will populate players.user with userName 
+// so that the players field is returned with useful info, not just _id
+
 export async function getIncompleteGames(
   userId: string
-): Promise<IncompleteGameData[]> {
-  return await GameModel.aggregate([
-    {
-      $match: {
-        $or: [
-          {
-            'players.userId': new mongoose.Types.ObjectId(userId),
-            status: { $eq: 'ACTIVE' },
-          },
-          {
-            isMulti: true,
-            status: GAMESTATUS.ACTIVE,
-            players: { $size: 1 },
-            'players.userId': { $ne: userId },
-          },
-        ],
+): Promise<GameDocument[]> {
+  return await GameModel.find({
+    $or: [
+      {
+        'players.user': new mongoose.Types.ObjectId(userId),
+        status: { $eq: 'ACTIVE' },
       },
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'players.userId',
-        foreignField: '_id',
-        as: 'userDetail',
-        pipeline: [
-          {
-            $project: {
-              _id: 0,
-              userId: '$_id',
-              username: 1,
-            },
-          },
-        ],
+      {
+        isMulti: true,
+        status: GAMESTATUS.ACTIVE,
+        players: { $size: 1 },
+        'players.user': { $ne: userId },
       },
-    },
-    {
-      $project: {
-        _id: 1,
-        gameNumber: 1,
-        size: 1,
-        isMulti: 1,
-        createdAt: 1,
-        players: 1,
-        userDetails: '$userDetail',
-      },
-    },
-  ]);
+    ],
+  }).populate({path: 'players.user', select: '_id userName'}).exec();
+  
+  // return await GameModel.aggregate([
+  //   {
+  //     $match: {
+  //       $or: [
+  //         {
+  //           'players.user': new mongoose.Types.ObjectId(userId),
+  //           status: { $eq: 'ACTIVE' },
+  //         },
+  //         {
+  //           isMulti: true,
+  //           status: GAMESTATUS.ACTIVE,
+  //           players: { $size: 1 },
+  //           'players.user': { $ne: userId },
+  //         },
+  //       ],
+  //     },
+  //   },
+  //   // TODO: creating the userDetail seems redundant and might not being used at client side; consider removing?
+  //   {
+  //     $lookup: {
+  //       from: 'users',
+  //       localField: 'players.user',
+  //       foreignField: '_id',
+  //       as: 'userDetail',
+  //       pipeline: [
+  //         {
+  //           $project: {
+  //             _id: 0,
+  //             userId: '$_id',
+  //             username: 1,
+  //           },
+  //         },
+  //       ],
+  //     },
+  //   },
+  //   {
+  //     $project: {
+  //       _id: 1,
+  //       gameNumber: 1,
+  //       size: 1,
+  //       isMulti: 1,
+  //       createdAt: 1,
+  //       players: 1,
+  //       userDetails: '$userDetail',
+  //     },
+  //   },
+  // ]);
+  // leaving all the above comment in because it might be useful in getCompletedGames
 }
 
 export async function getCompletedGames(
@@ -86,7 +103,7 @@ export async function getCompletedGames(
   return await GameModel.aggregate([
     {
       $match: {
-        'players.userId': new mongoose.Types.ObjectId(userId),
+        'players.user': new mongoose.Types.ObjectId(userId),
         status: { $ne: 'ACTIVE' },
       },
     },
@@ -111,9 +128,9 @@ export async function getIncompleteGame(
 ): Promise<ReEnterGameDBReply | NoDBReply> {
   const doc = await GameModel.findOne({
     _id: new mongoose.Types.ObjectId(id),
-    'players.userId': new mongoose.Types.ObjectId(userId),
+    'players.user': new mongoose.Types.ObjectId(userId),
     status: GAMESTATUS.ACTIVE,
-  });
+  }).populate('players.user', 'userName').exec();
 
   if (doc) {
     return {
@@ -131,9 +148,9 @@ export async function getCompletedGame(
 ): Promise<RetrieveGameDBReply | NoDBReply> {
   const doc = await GameModel.findOne({
     _id: new mongoose.Types.ObjectId(id),
-    'players.userId': new mongoose.Types.ObjectId(userId),
+    'players.user': new mongoose.Types.ObjectId(userId),
     status: { $not: { $eq: GAMESTATUS.ACTIVE } },
-  });
+  }).populate('players.user', 'userName').exec();
 
   if (doc) {
     return {
@@ -162,9 +179,7 @@ export async function createGame(
     ...Array(input.size[0] * input.size[1]),
   ].map((_) => ({ status: POSITION_STATUS.NONE }));
 
-  const userDetail = await UserModel.findById(userId);
-
-  return await GameModel.create({
+  const newGame = new GameModel({
     ...input,
     status: GAMESTATUS.ACTIVE,
     gameNumber: await getNextSequence('gameIdNumber'),
@@ -172,12 +187,16 @@ export async function createGame(
     selectedPositions: [],
     players: [
       {
-        userId: new mongoose.Types.ObjectId(userId),
+        user: new mongoose.Types.ObjectId(userId),
         color: input.isMulti ? POSITION_STATUS.BLACK : POSITION_STATUS.NONE,
-        userName: userDetail?.username,
       },
     ],
-  });
+  })
+
+  await newGame.save();
+  return await newGame.populate('players.user', 'userName');
+  // could also do the following because the caller is handling promises
+  // return newGame.populate('players.user', 'userName')
 }
 
 export async function updateGame(
@@ -211,7 +230,7 @@ export async function updateGame(
               '$players.color',
               {
                 $indexOfArray: [
-                  '$players.userId',
+                  '$players.user',
                   new mongoose.Types.ObjectId(userId),
                 ],
               },
@@ -249,7 +268,7 @@ export async function updateGame(
         _id: new mongoose.Types.ObjectId(id),
         players: {
           $elemMatch: {
-            userId: new mongoose.Types.ObjectId(userId),
+            user: new mongoose.Types.ObjectId(userId),
           },
         },
         positions: {
@@ -267,10 +286,12 @@ export async function updateGame(
         },
       },
       { new: true } // new option to true to return the document after update was applied.
-    );
-    console.log('got through the move/update');
+    ).populate('players.user', 'userName').exec();
+
     // program will return here if no match for findOneAndUpdate'
     if (!doc) return { action: ACTION.MOVE, result: null };
+
+    console.log('got through the move/update');
 
     // TODO: learn why debug emits no msg to terminal while info does.
     logger.debug(`doc.positions.length = ${doc.positions.length}`);
@@ -352,13 +373,12 @@ export async function updateGame(
   } else if ('action' in input) {
     if (input.action === 'JOIN') {
       // a player is joining
-      const userDetail = await UserModel.findById(userId);
       const game = await GameModel.findOneAndUpdate(
         {
           _id: new mongoose.Types.ObjectId(id),
           status: GAMESTATUS.ACTIVE,
           players: { $size: 1 },
-          'players.userId': { $ne: userId },
+          'players.user': { $ne: userId },
         },
         [
           {
@@ -368,7 +388,7 @@ export async function updateGame(
                   '$players',
                   [
                     {
-                      userId: new mongoose.Types.ObjectId(userId),
+                      user: new mongoose.Types.ObjectId(userId),
                       color: {
                         $cond: [
                           { $eq: [{ $first: '$players.color' }, PLAYER.BLACK] },
@@ -376,7 +396,6 @@ export async function updateGame(
                           PLAYER.BLACK,
                         ],
                       },
-                      userName: userDetail?.username,
                     },
                   ],
                 ],
@@ -385,7 +404,7 @@ export async function updateGame(
           },
         ],
         { new: true }
-      );
+      ).populate('players.user', 'userName').exec();
 
       if (game) {
         return {
@@ -401,22 +420,25 @@ export async function updateGame(
         {
           _id: new mongoose.Types.ObjectId(id),
           status: GAMESTATUS.ACTIVE,
-          'players.userId': userId,
+          'players.user': userId,
         },
-        { $pull: { players: { userId: userId } } }
-      ); // username of player leaving is needed below, so don't use "new" option here
+        { $pull: { players: { user: userId } } }
+      ).populate('players.user', 'userName').exec(); 
+      // username of player leaving may be needed below, so "new" option is not used in this query
 
       if (doc) {
         if (doc.players.length === 1) {
           // no players left in game; delete game and short circuit out of here
-          // a DeleteResult object is returned here; NB: no. of players is really 0 in DB
+          // a DeleteResult object is returned, i.e: isDeleteGameDBResult() captures return val. in handler
+          //  NB: no. of players is really 0 in DB
           return await GameModel.deleteOne({
             _id: new mongoose.Types.ObjectId(id),
             status: GAMESTATUS.ACTIVE,
             players: { $size: 0 },
           });
         }
-        // a player remains in game - return the fact
+        // return the fact that a player remains in game; this is where the userName is needed for later
+        // doc.players contains both the player that left and the one who remains
         return {
           action: ACTION.LEAVE,
           players: doc.players,
@@ -429,8 +451,8 @@ export async function updateGame(
       const doc = await GameModel.findOne({
         _id: new mongoose.Types.ObjectId(id),
         status: GAMESTATUS.ACTIVE,
-        'players.userId': userId,
-      });
+        'players.user': userId,
+      }).populate('players.user', 'userName').exec();
 
       if (doc) {
         return { action: ACTION.REST, players: doc.players };
@@ -445,13 +467,13 @@ export async function updateGame(
         _id: new mongoose.Types.ObjectId(id),
         status: GAMESTATUS.ACTIVE,
         players: { $size: 1 },
-        'players.userId': userId,
+        'players.user': userId,
       },
       {
         $set: { 'positions.$[].status': input.status, selectedPositions: [] },
       },
       { new: true }
-    );
+    ).populate('players.user', 'userName').exec();
 
     if (doc) {
       return {
@@ -472,6 +494,6 @@ export async function deleteGame(id: string, userId: string) {
     _id: new mongoose.Types.ObjectId(id),
     status: GAMESTATUS.ACTIVE,
     players: { $size: 1 },
-    'players.userId': userId,
+    'players.user': userId,
   });
 }

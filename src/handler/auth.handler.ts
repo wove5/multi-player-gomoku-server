@@ -31,7 +31,7 @@ authHandler.post(
 
       // Create user in our database
       const newUser = await createUser({
-        username,
+        userName: username,
         password: encryptedPassword,
       });
 

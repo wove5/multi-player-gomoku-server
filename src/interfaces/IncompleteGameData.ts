@@ -7,5 +7,4 @@ export interface IncompleteGameData {
   isMulti: boolean;
   createdAt: Date;
   players: PlayerDetail[];
-  userDetails: UserDetail[];
 }

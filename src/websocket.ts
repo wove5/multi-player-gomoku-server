@@ -125,7 +125,7 @@ export const startWebSocketServer = (
       }
     } else {
       logger.info(
-        `⚡️[websocket server]: 4websocket connection request denied to unauthorised client`
+        `⚡️[websocket server]: websocket connection request denied to unauthorised client`
       );
       socket.write('HTTP/1.1 403 Unauthorised - invalid URL\r\n\r\n');
       socket.destroy();

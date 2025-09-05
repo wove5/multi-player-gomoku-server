@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import { PLAYER, POSITION_STATUS } from '../constants';
+import { UserDocument } from '../model/user.model';
 
 export type PlayerDetail = {
-  userId: mongoose.Types.ObjectId;
+  user: mongoose.Types.ObjectId | UserDocument;
   color: POSITION_STATUS;
-  userName: string;
 };

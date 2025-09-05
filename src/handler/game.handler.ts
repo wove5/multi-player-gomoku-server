@@ -66,7 +66,6 @@ gameHandler.get('/', async (req: Request, res: Response) => {
         isMulti: g.isMulti,
         createdAt: g.createdAt,
         players: g.players,
-        users: g.userDetails,
       }))
     );
   } catch (err: any) {
@@ -321,6 +320,7 @@ gameHandler.put(
               })
             );
           });
+        // response sent back to player that left - although they won't make use of it
         return res.status(200).send({ players: result.players });
       } else if (isDeleteGameDBResult(result)) {
         if (result.acknowledged && result.deletedCount === 1) {

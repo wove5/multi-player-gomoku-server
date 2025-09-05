@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import UserModel, { UserDocument } from '../model/user.model';
 
 export async function getUserByUsername(username: string) {
-  return UserModel.findOne({ username }).lean();
+  return UserModel.findOne({ userName: username }).lean();
 }
 
 export async function getUserById(id: string) {
