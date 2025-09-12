@@ -43,8 +43,7 @@ import {
   TakeRestFromGameDBReply,
   ReEnterGameDBReply,
   RetrieveGameDBReply,
-  ReadGameDBReply,
-  ReadGameResponse,
+  MsgDBReply,
 } from '../interfaces';
 import logger from '../util/logger';
 
@@ -249,6 +248,9 @@ gameHandler.put(
         // return res.playerState === PLAYER_STATE.RESTING;
         return res.action === ACTION.REST;
       }
+      function isMsgDBReply(res: any): res is MsgDBReply {
+        return res.action === ACTION.MSG;
+      }
       function isNoDBReply(res: any): res is NoDBReply {
         return res.result === null;
       }
@@ -355,10 +357,16 @@ gameHandler.put(
               );
             });
         }
-        return res.status(200).send();
+        return res.status(204).send();
       } else if (isResetGameDBReply(result)) {
         return res.status(200).send(result.result.game);
         // do something
+      } else if (isMsgDBReply(result)) {
+        const {action, ...messages} = result;
+        if (!messages) return res.sendStatus(404);
+        // return res.status(200).send({messages: result.messages});
+        // return res.status(200).send(messages); // consider sending messages
+        return res.status(204).send();
       } else if (isNoDBReply(result)) {
         return res.sendStatus(404);
       } else {

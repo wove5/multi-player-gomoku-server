@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import { PLAYER } from '../constants';
 import { PlayerDetail } from '../types';
+import { Message } from '../types/Message';
 
 enum POSITION_STATUS {
   BLACK = 'BLACK',
@@ -31,6 +31,7 @@ export interface GameDocument {
     status: POSITION_STATUS;
   }>;
   selectedPositions: number[];
+  messages: Message[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,6 +55,13 @@ const gameSchema = new mongoose.Schema(
       },
     ],
     selectedPositions: [Number],
+    messages: [
+      {
+        message: String,
+        userId: String,
+        userName: String,
+      }
+    ]
   },
   { timestamps: true }
 );

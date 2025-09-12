@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { PLAYER, POSITION_STATUS } from '../constants';
+import { POSITION_STATUS } from '../constants';
 import { UserDocument } from '../model/user.model';
 
 export type PlayerDetail = {

@@ -28,6 +28,14 @@ const UpdateGameSelectPosition = object({
   id: string({ required_error: 'Position ObjectId is required' }),
 });
 
+const UpdateGameChat = object({
+  msg: object({
+    message: string({required_error: 'Message text required'}),
+    userId: string({required_error: 'userId of player required'}),
+    userName: string({required_error: 'userName of player required'}),
+  }),
+})
+
 const UpdateGameReset = object({
   status: z.literal('NONE'),
 });
@@ -41,6 +49,7 @@ const updateGamePayloadGeneral = {
     UpdateGameSelectPosition,
     UpdateGameReset,
     UpdateGameJoinLeave,
+    UpdateGameChat
   ]),
 };
 

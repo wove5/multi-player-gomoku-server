@@ -32,6 +32,7 @@ export interface UpdateResultDoc {
 export async function getIncompleteGames(
   userId: string
 ): Promise<GameDocument[]> {
+  logger.info(`⚡️[getIncompleteGames fnc]: entered`);
   return await GameModel.find({
     $or: [
       {
@@ -42,7 +43,8 @@ export async function getIncompleteGames(
         isMulti: true,
         status: GAMESTATUS.ACTIVE,
         players: { $size: 1 },
-        'players.user': { $ne: userId },
+        // 'players.user': { $ne: userId },
+        'players.user': { $ne: new mongoose.Types.ObjectId(userId) },
       },
     ],
   }).populate({path: 'players.user', select: '_id userName'}).exec();
@@ -100,6 +102,7 @@ export async function getIncompleteGames(
 export async function getCompletedGames(
   userId: string
 ): Promise<CompletedGameData[]> {
+  logger.info(`⚡️[getCompletedGames fnc]: entered`);
   return await GameModel.aggregate([
     {
       $match: {
@@ -126,6 +129,7 @@ export async function getIncompleteGame(
   id: string,
   userId: string
 ): Promise<ReEnterGameDBReply | NoDBReply> {
+  logger.info(`⚡️[getIncompleteGame fnc]: entered`);
   const doc = await GameModel.findOne({
     _id: new mongoose.Types.ObjectId(id),
     'players.user': new mongoose.Types.ObjectId(userId),
@@ -146,6 +150,7 @@ export async function getCompletedGame(
   id: string,
   userId: string
 ): Promise<RetrieveGameDBReply | NoDBReply> {
+  logger.info(`⚡️[getCompletedGame fnc]: entered`);
   const doc = await GameModel.findOne({
     _id: new mongoose.Types.ObjectId(id),
     'players.user': new mongoose.Types.ObjectId(userId),
@@ -175,6 +180,7 @@ export async function createGame(
   input: CreateGameInput['body'],
   userId: string
 ) {
+  logger.info(`⚡️[createGame fnc]: entered`);
   const blankBoardPositions: Array<PositionInfo> = [
     ...Array(input.size[0] * input.size[1]),
   ].map((_) => ({ status: POSITION_STATUS.NONE }));
@@ -185,6 +191,7 @@ export async function createGame(
     gameNumber: await getNextSequence('gameIdNumber'),
     positions: blankBoardPositions,
     selectedPositions: [],
+    messages: [],
     players: [
       {
         user: new mongoose.Types.ObjectId(userId),
@@ -204,6 +211,7 @@ export async function updateGame(
   userId: string,
   input: UpdateGameInput['body']
 ): Promise<UpdateGameDBReturnType> {
+  logger.info(`⚡️[updateGame fnc]: entered`);
   if ('id' in input) {
     const selContext = await GameModel.aggregate([
       {
@@ -250,9 +258,9 @@ export async function updateGame(
     // block player's attempt to make move ahead of their turn
     if (
       selContext[0].isMulti &&
-      (selContext[0].lastSelStatus === selContext[0].playerColor ||
-        (selContext[0].lastSelStatus === POSITION_STATUS.NONE &&
-          selContext[0].playerColor !== POSITION_STATUS.BLACK))
+      (selContext[0].lastSelStatus === selContext[0].playerColor) // ||
+        // (selContext[0].lastSelStatus === POSITION_STATUS.NONE &&
+        //   selContext[0].playerColor !== POSITION_STATUS.BLACK))
     )
       return {
         action: ACTION.MOVE,
@@ -263,6 +271,7 @@ export async function updateGame(
       };
 
     // formal query to try and update the selected position
+    logger.info(`⚡️[Updating board position for MOVE made]`);
     const doc = await GameModel.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(id),
@@ -280,7 +289,11 @@ export async function updateGame(
       },
       {
         'positions.$.status':
-          selContext[0].lastSelStatus === 'BLACK' ? 'WHITE' : 'BLACK',
+          selContext[0].lastSelStatus === 'NONE'
+          ? selContext[0].playerColor
+          : selContext[0].lastSelStatus === 'BLACK'
+          ? 'WHITE'
+          : 'BLACK',
         $push: {
           selectedPositions: selContext[0].currentSelIndex,
         },
@@ -291,7 +304,7 @@ export async function updateGame(
     // program will return here if no match for findOneAndUpdate'
     if (!doc) return { action: ACTION.MOVE, result: null };
 
-    console.log('got through the move/update');
+    logger.info(`⚡️[got through the move/update]`);
 
     // TODO: learn why debug emits no msg to terminal while info does.
     logger.debug(`doc.positions.length = ${doc.positions.length}`);
@@ -370,15 +383,49 @@ export async function updateGame(
         },
       };
     }
+  } else if ('msg' in input) {
+    logger.info(`⚡️[updating Messages in game]`);
+    const game = await GameModel.findOneAndUpdate(
+      {
+        _id: new mongoose.Types.ObjectId(id),
+        // 'players.user': { userId }, // casting error occurred here
+        'players.user': new mongoose.Types.ObjectId(userId),
+      },
+      [
+        {
+          $set: {
+            messages: {
+              $concatArrays: [
+                '$messages',
+                [
+                  input.msg
+                ],
+              ],
+            },
+          },
+        },
+      ],
+      { new: true }
+    ).exec();
+    if (game) {
+      return {
+        action: ACTION.MSG,
+        messages: game.messages,
+      };
+    } else {
+      return { action: ACTION.MSG, result: null };
+    }
   } else if ('action' in input) {
     if (input.action === 'JOIN') {
       // a player is joining
+      logger.info(`⚡️[Making update for player joining game]`);
       const game = await GameModel.findOneAndUpdate(
         {
           _id: new mongoose.Types.ObjectId(id),
           status: GAMESTATUS.ACTIVE,
           players: { $size: 1 },
-          'players.user': { $ne: userId },
+          // 'players.user': { $ne: userId },
+          'players.user': { $ne: new mongoose.Types.ObjectId(userId) },
         },
         [
           {
@@ -416,11 +463,13 @@ export async function updateGame(
       }
     } else if (input.action === 'LEAVE') {
       // a player is leaving
+      logger.info(`⚡️[Making update for player leaving game]`);
       const doc = await GameModel.findOneAndUpdate(
         {
           _id: new mongoose.Types.ObjectId(id),
           status: GAMESTATUS.ACTIVE,
-          'players.user': userId,
+          // 'players.user': userId,
+          'players.user': new mongoose.Types.ObjectId(userId),
         },
         { $pull: { players: { user: userId } } }
       ).populate('players.user', 'userName').exec(); 
@@ -448,10 +497,12 @@ export async function updateGame(
       }
     } else {
       // player is taking rest
+      logger.info(`⚡️[player taking rest]`);
       const doc = await GameModel.findOne({
         _id: new mongoose.Types.ObjectId(id),
         status: GAMESTATUS.ACTIVE,
-        'players.user': userId,
+        // 'players.user': userId,
+        'players.user': new mongoose.Types.ObjectId(userId),
       }).populate('players.user', 'userName').exec();
 
       if (doc) {
@@ -462,12 +513,14 @@ export async function updateGame(
     }
   } else {
     // resetting game
+    logger.info(`⚡️[Updating game with reset]`);
     const doc = await GameModel.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(id),
         status: GAMESTATUS.ACTIVE,
         players: { $size: 1 },
-        'players.user': userId,
+        // 'players.user': userId,
+        'players.user': new mongoose.Types.ObjectId(userId),
       },
       {
         $set: { 'positions.$[].status': input.status, selectedPositions: [] },
@@ -494,6 +547,7 @@ export async function deleteGame(id: string, userId: string) {
     _id: new mongoose.Types.ObjectId(id),
     status: GAMESTATUS.ACTIVE,
     players: { $size: 1 },
-    'players.user': userId,
+    // 'players.user': userId,
+    'players.user': new mongoose.Types.ObjectId(userId),
   });
 }

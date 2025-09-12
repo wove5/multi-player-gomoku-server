@@ -9,3 +9,4 @@ export * from './ReadGameResponse';
 export * from './RestFromGameReply';
 export * from './GetGameReply';
 export * from './ExtWebSocket';
+export * from './MsgReply'

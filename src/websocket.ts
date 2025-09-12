@@ -93,8 +93,8 @@ export const startWebSocketServer = (
         const incompleteGames = await getIncompleteGames(decoded._id);
         const completedGames = await getCompletedGames(decoded._id);
         // Confirm that client with valid token decoded._id belongs in game with gameId
-        const completedGame = completedGames
-          .map((g) => g._id.toString())
+        const completedGame = completedGames // currently redundant because no websocket is opened
+          .map((g) => g._id.toString())      // for completed games, however it is likely in future
           .find((gId) => gId === gameId);
         const incompleteGame = incompleteGames
           .map((g) => g._id.toString())
