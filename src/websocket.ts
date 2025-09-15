@@ -232,6 +232,7 @@ export const startWebSocketServer = (
     wss.clients.forEach(function each(ws) {
       if (ws.isAlive === false || Date.now() > ws.expTime) {
         console.log(`closing wsId: ${ws.wsId} / userId: ${ws.userId}`);
+        // TODO: send out REST from game notification for other player left in game.
         return ws.terminate();
       }
 

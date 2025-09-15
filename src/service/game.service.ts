@@ -272,6 +272,7 @@ export async function updateGame(
 
     // formal query to try and update the selected position
     logger.info(`⚡️[Updating board position for MOVE made]`);
+    const col: POSITION_STATUS = selContext[0].playerColor;
     const doc = await GameModel.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(id),
@@ -289,10 +290,12 @@ export async function updateGame(
       },
       {
         'positions.$.status':
-          selContext[0].lastSelStatus === 'NONE'
-          ? selContext[0].playerColor
+          selContext[0].lastSelStatus === 'NONE' // no selections; board is blank
+          // ? (selContext[0].playerColor === 'NONE' ? 'BLACK' : selContext[0].playerColor)
+          // result based on whether game is single player or multi player
+          ? (col === 'NONE' ? 'BLACK' : col) // makes the code a bit neater
           : selContext[0].lastSelStatus === 'BLACK'
-          ? 'WHITE'
+          ? 'WHITE'  // otherwise, result determined by last selected position status
           : 'BLACK',
         $push: {
           selectedPositions: selContext[0].currentSelIndex,
@@ -313,6 +316,7 @@ export async function updateGame(
     );
 
     if (gameWon(doc.selectedPositions.slice(-1)[0], doc.positions, doc.size)) {
+      logger.info(`⚡️Game Won!`)
       console.log(
         'doc.selectedPositions.slice(-1)[0] = ',
         doc.selectedPositions.slice(-1)[0]
