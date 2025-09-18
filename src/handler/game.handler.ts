@@ -326,7 +326,7 @@ gameHandler.put(
         return res.status(200).send({ players: result.players });
       } else if (isDeleteGameDBResult(result)) {
         if (result.acknowledged && result.deletedCount === 1) {
-          return res.status(200);
+          return res.status(204).send();
         } else {
           return res.sendStatus(404);
         }
@@ -360,7 +360,7 @@ gameHandler.put(
         return res.status(204).send();
       } else if (isResetGameDBReply(result)) {
         return res.status(200).send(result.result.game);
-        // do something
+        // do something?
       } else if (isMsgDBReply(result)) {
         const {action, ...messages} = result;
         if (!messages) return res.sendStatus(404);
