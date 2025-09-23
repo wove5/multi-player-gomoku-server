@@ -40,8 +40,8 @@ authHandler.post(
 
       // return new user with token
       res.status(200).json({ _id: newUser._id, token });
-    } catch (err) {
-      return res.status(500).send(err);
+    } catch (err: any) {
+      return res.status(500).send(err.message);
     }
   }
 );
@@ -63,8 +63,8 @@ authHandler.post(
         return res.status(200).json({ _id: user._id, token });
       }
       return res.status(400).send('Invalid Credentials');
-    } catch (err) {
-      return res.status(500).send(err);
+    } catch (err: any) {
+      return res.status(500).send(err.message);
     }
   }
 );
