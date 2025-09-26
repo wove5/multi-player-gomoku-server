@@ -35,5 +35,9 @@
     "@types/ws": "^8.5.6",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.2.2"
+  },
+  "resolutions": {
+    "ts-node-dev/rimraf/glob/minimatch/brace-expansion": "^1.1.12",
+    "pino-pretty/help-me/glob/minimatch/brace-expansion": "^2.0.2"
   }
 }
