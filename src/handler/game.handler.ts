@@ -77,24 +77,40 @@ gameHandler.get('/games', async (req: Request, res: Response) => {
   const userId = req.userId;
   try {
     const result = await getCompletedGames(userId);
-    // a bit more handling implemented here than in getIncompleteGames;
-    if (result.length > 0) {
-      return res.status(200).send(
-        result.map((g) => ({
-          _id: g._id,
-          gameNumber: g.gameNumber,
-          size: g.size,
-          status: g.status,
-          lastSelectedPosition: g.lastSelectedPosition,
-          createdAt: g.createdAt,
-          updatedAt: g.updatedAt,
-        }))
-      );
-    } else {
-      // set error message to 'Not Found', so client can use this.
-      return res.status(404).send('Not Found');
-      // return res.status(404).send(res.statusCode); // this gives a deprecation msg
-    }
+    // // a bit more handling implemented here than in getIncompleteGames;
+    // if (result.length > 0) {
+    //   return res.status(200).send(
+    //     result.map((g) => ({
+    //       _id: g._id,
+    //       gameNumber: g.gameNumber,
+    //       size: g.size,
+    //       status: g.status,
+    //       lastSelectedPosition: g.lastSelectedPosition,
+    //       createdAt: g.createdAt,
+    //       updatedAt: g.updatedAt,
+    //     }))
+    //   );
+    // } else {
+    //   // set error message to 'Not Found', so client can use this.
+    //   return res.status(404).send('Not Found');
+    //   // return res.status(404).send(res.statusCode); // this gives a deprecation msg
+    // }
+    // it is incorrect to send a 404 Not Found when db finds no documents;
+    // just like in handler above for GET "/", a result should be sent out
+    // regardless of any documents found or not. sending [] will lead to 
+    // correct behaviour on the client, particularly in the Game page, as
+    // described in commentary in the Games page in the client app.
+    return res.status(200).send(
+      result.map((g) => ({
+        _id: g._id,
+        gameNumber: g.gameNumber,
+        size: g.size,
+        status: g.status,
+        lastSelectedPosition: g.lastSelectedPosition,
+        createdAt: g.createdAt,
+        updatedAt: g.updatedAt,
+      }))
+    );
   } catch (err: any) {
     return res.status(500).send(err);
   }
