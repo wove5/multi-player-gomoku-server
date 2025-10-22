@@ -121,7 +121,7 @@ gameHandler.post(
   '/',
   validateSchema(createGameSchema),
   async (
-    req: Request<{}, CreateGameInput, CreateGameInput['body']>,
+    req: Request<{}, GameDocument, CreateGameInput['body']>,
     res: Response<GameDocument>
   ) => {
     try {
@@ -233,7 +233,7 @@ gameHandler.put(
   async (
     req: Request<
       UpdateGameInput['params'],
-      GameStatus | GameDocument,
+      UpdateGameResponseType,
       UpdateGameInput['body']
     >,
     res: Response<UpdateGameResponseType>
