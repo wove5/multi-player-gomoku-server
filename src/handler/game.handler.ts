@@ -4,6 +4,8 @@ import WebSocket from 'ws';
 import { wss } from '../websocket';
 
 import validateSchema from '../middleware/validateSchema';
+import validateUpdateGameBodyPayload from '../middleware/validateUpdateGameBodyPayload';
+import validateUpdateGameSchema from '../middleware/validateUpdateGameSchema';
 import { deserializeUser } from '../middleware/deserializeUser';
 
 import {
@@ -12,7 +14,7 @@ import {
   CreateGameInput,
   readGameSchema,
   ReadGameInput,
-  updateGameGeneralSchema,
+  assertUpdateGamePayloadShape,
   UpdateGameInput,
 } from '../schema/game.schema';
 
@@ -229,7 +231,8 @@ gameHandler.get(
 // Update Game
 gameHandler.put(
   '/game/:id',
-  validateSchema(updateGameGeneralSchema),
+  validateUpdateGameBodyPayload(assertUpdateGamePayloadShape),
+  validateUpdateGameSchema,
   async (
     req: Request<
       UpdateGameInput['params'],
