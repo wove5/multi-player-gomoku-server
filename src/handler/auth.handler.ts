@@ -1,20 +1,25 @@
 import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import validateSchema from '../middleware/validateSchema';
+import validateAuthBodyPayload from '../middleware/validateAuthBodyPayload';
 import { createUser, getUserByUsername } from '../service/auth.service';
 import {
   LoginInput,
   RegisterInput,
   registerSchema,
+  loginSchema,
+  assertAuthPayloadShape
 } from '../schema/auth.schema';
 import { signJwt } from '../util/jwt';
+import { AuthResponse } from '../types';
 
 const authHandler = express.Router();
 
 authHandler.post(
   '/register',
-  validateSchema(registerSchema),
-  async (req: Request<{}, {}, RegisterInput['body']>, res: Response) => {
+  validateAuthBodyPayload(assertAuthPayloadShape),
+  // validateSchema(registerSchema),
+  async (req: Request<{}, AuthResponse, RegisterInput['body']>, res: Response<AuthResponse>) => {
     try {
       const { username, password } = req.body;
 
@@ -23,7 +28,7 @@ authHandler.post(
       const existingUser = await getUserByUsername(username);
 
       if (existingUser) {
-        return res.status(409).send('User Already Exists. Please Login');
+        return res.status(409).send({message: 'User Already Exists. Please Login'});
       }
 
       //Encrypt user password
@@ -48,7 +53,9 @@ authHandler.post(
 
 authHandler.post(
   '/login',
-  async (req: Request<{}, {}, LoginInput['body']>, res: Response) => {
+  validateAuthBodyPayload(assertAuthPayloadShape),
+  // validateSchema(loginSchema),
+  async (req: Request<{}, AuthResponse, LoginInput['body']>, res: Response<AuthResponse>) => {
     try {
       // Get user input
       const { username, password } = req.body;
@@ -62,7 +69,7 @@ authHandler.post(
         // user
         return res.status(200).json({ _id: user._id, token });
       }
-      return res.status(400).send('Invalid Credentials');
+      return res.status(400).send({message: 'Invalid Credentials'});
     } catch (err: any) {
       return res.status(500).send(err.message);
     }

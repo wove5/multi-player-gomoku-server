@@ -1,6 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodObject } from 'zod';
-import { UpdateGameSchemas } from '../schema/game.schema';
 
 const validate =
   (req: Request, res: Response, next: NextFunction) => {

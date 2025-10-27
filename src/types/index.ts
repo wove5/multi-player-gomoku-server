@@ -6,3 +6,4 @@ export * from './UpdateGameDBReturnType';
 export * from './UpdateGameResponseType';
 export * from './PlayerDetail';
 export * from './GameConnections';
+export * from './UserAuthReply'
