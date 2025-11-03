@@ -8,38 +8,11 @@ import z, {
   record,
   ZodObject,
 } from 'zod';
+import { POSITION_STATUS, GAMESTATUS } from '../model/game.model';
 import mongoose from 'mongoose';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 
 extendZodWithOpenApi(z);
-
-export const createGamePayload = object({
-  size: array(
-    number()
-      .min(5, { error: 'array elements must be number in the range 5..12' })
-      .max(12, { error: 'array elements must be number in the range 5..12' }),
-    {
-      error: (issue) =>
-        issue.input === undefined
-          ? `Board size is required: array of number, 'size', is missing`
-          : `Invalid input type: expected array of number, received ${typeof issue.input}`,
-    }
-  )
-    .min(2, { error: 'input must be array of 2 numbers' })
-    .max(2, { error: 'input must be array of 2 numbers' })
-    .openapi({
-      description:
-        'Dimensions of game grid: must be numbers in the range 5..12',
-    }),
-  isMulti: boolean({
-    error: (iss) =>
-      iss.input === undefined
-        ? `(multi/single)-player game mode required: missing boolean flag 'isMulti' `
-        : `invalid input type: expected boolean, received ${typeof iss.input}`,
-  }).openapi({
-    description: 'Boolean flag indicates if game is multi-player or not',
-  }), // example/s placed in registerPath() - they work better there.
-});
 
 const UpdateGameSelectPosition = object({
   id: string({
@@ -51,7 +24,7 @@ const UpdateGameSelectPosition = object({
     .min(1, 'Position ObjectId is required')
     .refine(
       (val) =>
-        mongoose.Types.ObjectId.isValid(val) &&
+        mongoose.isObjectIdOrHexString(val) &&
         new mongoose.Types.ObjectId(val).toString() === val,
       { error: 'Invalid mongoDB ObjectId for position id' }
     ),
@@ -64,7 +37,7 @@ const UpdateGameChat = object({
       .min(1, { error: 'userId of player required' })
       .refine(
         (val) =>
-          mongoose.Types.ObjectId.isValid(val) &&
+          mongoose.isObjectIdOrHexString(val) &&
           new mongoose.Types.ObjectId(val).toString() === val,
         { error: 'Invalid mongoDB ObjectId for userId' }
       ),
@@ -107,10 +80,6 @@ export const readUpdateDeleteGameParams = {
       }),
   }),
 };
-
-export const createGameSchema = object({
-  body: createGamePayload,
-}).openapi('CreateGameSchema');
 
 export const readGameSchema = object({
   ...readUpdateDeleteGameParams,
@@ -179,7 +148,6 @@ export const deleteGameSchema = object({
   ...readUpdateDeleteGameParams,
 });
 
-export type CreateGameInput = z.infer<typeof createGameSchema>;
 export type ReadGameInput = z.infer<typeof readGameSchema>;
 export type UpdateGameInput = z.infer<typeof updateGameGeneralSchema>;
 export type DeleteGameInput = z.infer<typeof deleteGameSchema>;

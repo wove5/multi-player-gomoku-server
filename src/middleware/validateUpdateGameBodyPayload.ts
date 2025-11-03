@@ -1,16 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodObject, ZodRecord } from 'zod';
-import { UpdateGameSchemas } from '../schema/game.schema';
+import { UpdateGameSchemas } from '../schema/updateGameSchemas';
 
 const validate =
-  (schema: ZodRecord) =>
-  (req: Request, res: Response, next: NextFunction) => {
+  (schema: ZodRecord) => (req: Request, res: Response, next: NextFunction) => {
     try {
       schema.parse({
         ...req.body,
       });
       // Inject updateGameSchema corresponding to the payload object key into request
-      req.updateGameSchema = UpdateGameSchemas[`${Object.keys(req.body)[0].toString()}`]
+      req.updateGameSchema =
+        UpdateGameSchemas[`${Object.keys(req.body)[0].toString()}`];
       next();
     } catch (e: any) {
       // return res.status(400).send(e.errors);

@@ -1,12 +1,18 @@
+import { Message } from './../types/Message';
 import {
   OpenAPIRegistry,
   OpenApiGeneratorV31,
 } from '@asteasolutions/zod-to-openapi';
+import { readUpdateDeleteGameParams } from '../schema/updateGameSchemas';
+
 import {
   createGamePayload,
-  readUpdateDeleteGameParams,
-} from '../schema/game.schema';
+  createGameResponseSchema,
+  gamestatusSchema,
+} from '../schema/createGameSchemas';
+
 import * as fs from 'fs';
+import { serverErrorSchema } from '../schema/serverErrorSchema';
 
 function isEmpty(obj: object) {
   for (const prop in obj) {
@@ -59,11 +65,19 @@ if (process.env.allowHost === undefined) {
     responses: {
       200: {
         description: 'Game created',
-        // content: {
-        //   'application/json': {
-        //     schema:
-        //   }
-        // }
+        content: {
+          'application/json': {
+            schema: createGameResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Server error',
+        content: {
+          'application/json': {
+            schema: serverErrorSchema,
+          },
+        },
       },
     },
   });

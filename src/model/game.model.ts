@@ -1,22 +1,39 @@
 import mongoose from 'mongoose';
-import { PlayerDetail } from '../types';
-import { Message } from '../types/Message';
+// import { PlayerDetail, Message } from '../types';
 
-enum POSITION_STATUS {
+export enum POSITION_STATUS {
   BLACK = 'BLACK',
   WHITE = 'WHITE',
   NONE = 'NONE',
 }
 
-enum SELPOS_STATUS {
+export enum SELPOS_STATUS {
   BLACK = 'BLACK',
   WHITE = 'WHITE',
 }
 
-enum GAMESTATUS {
+export enum GAMESTATUS {
   ACTIVE = 'ACTIVE',
   WON = 'WON',
   DRAWN = 'DRAWN',
+}
+
+type PlayerDetail = {
+  user: mongoose.Types.ObjectId | UserDocument;
+  color: POSITION_STATUS;
+};
+
+type Message = {
+  message: string;
+  userId: string;
+  userName: string;
+};
+
+interface UserDocument {
+  userName: string;
+  password: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 // export interface CompleteGameDocument extends Document {  // mongoose docs recommend not extending Document
@@ -60,8 +77,8 @@ const gameSchema = new mongoose.Schema(
         message: String,
         userId: String,
         userName: String,
-      }
-    ]
+      },
+    ],
   },
   { timestamps: true }
 );

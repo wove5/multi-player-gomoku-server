@@ -12,6 +12,9 @@ import authHandler from './handler/auth.handler';
 import { GameConnections } from './types';
 import { oaiSpec } from './openapi/oapiRegistry';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
+import z from 'zod';
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
+import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
 console.log(`process.env.allowHost = ${process.env.allowHost}`);
@@ -61,6 +64,7 @@ app.get('/healthcheck', (req: Request, res: Response) => {
 });
 
 if (swaggerUi) {
+  extendZodWithOpenApi(z);
   // app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
   const swaggerDocument = require('./openapi/openapi-docs.json');
   app.use('/api/api-docs', swaggerUi.serve);
@@ -77,6 +81,19 @@ if (swaggerUi) {
 
 app.use('/api/auth', authHandler);
 app.use('/api', gameHandler);
+
+app.use(errorHandler);
+
+// // something to consider including along with pm2
+// process.on('uncaughtException', (err) => {
+//   console.error('Uncaught Exception:', err.message);
+//   process.exit(1);
+// });
+
+// process.on('unhandledRejection', (err: Error) => {
+//   console.error('Unhandled Promise Rejection:', err.message);
+//   process.exit(1);
+// });
 
 // create http server
 export const server = createServer(app);

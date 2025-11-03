@@ -7,7 +7,8 @@ import { POSITION_STATUS, GAMESTATUS, PLAYER, ACTION } from '../constants';
 import { PositionInfo } from '../types/PositionInfo';
 
 import mongoose from 'mongoose';
-import { CreateGameInput, UpdateGameInput } from '../schema/game.schema';
+import { UpdateGameInput } from '../schema/updateGameSchemas';
+import { CreateGameInput } from '../schema/createGameSchemas';
 import {
   CompletedGameData,
   NoDBReply,
@@ -26,7 +27,7 @@ export interface UpdateResultDoc {
   nModified: number;
 }
 
-// create & read queries made on the game model will populate players.user with userName 
+// create & read queries made on the game model will populate players.user with userName
 // so that the players field is returned with useful info, not just _id
 
 export async function getIncompleteGames(
@@ -47,8 +48,10 @@ export async function getIncompleteGames(
         'players.user': { $ne: new mongoose.Types.ObjectId(userId) },
       },
     ],
-  }).populate({path: 'players.user', select: '_id userName'}).exec();
-  
+  })
+    .populate({ path: 'players.user', select: '_id userName' })
+    .exec();
+
   // return await GameModel.aggregate([
   //   {
   //     $match: {
@@ -134,7 +137,9 @@ export async function getIncompleteGame(
     _id: new mongoose.Types.ObjectId(id),
     'players.user': new mongoose.Types.ObjectId(userId),
     status: GAMESTATUS.ACTIVE,
-  }).populate('players.user', 'userName').exec();
+  })
+    .populate('players.user', 'userName')
+    .exec();
 
   if (doc) {
     return {
@@ -155,7 +160,9 @@ export async function getCompletedGame(
     _id: new mongoose.Types.ObjectId(id),
     'players.user': new mongoose.Types.ObjectId(userId),
     status: { $not: { $eq: GAMESTATUS.ACTIVE } },
-  }).populate('players.user', 'userName').exec();
+  })
+    .populate('players.user', 'userName')
+    .exec();
 
   if (doc) {
     return {
@@ -198,7 +205,7 @@ export async function createGame(
         color: input.isMulti ? POSITION_STATUS.BLACK : POSITION_STATUS.NONE,
       },
     ],
-  })
+  });
 
   await newGame.save();
   return await newGame.populate('players.user', 'userName');
@@ -258,9 +265,9 @@ export async function updateGame(
     // block player's attempt to make move ahead of their turn
     if (
       selContext[0].isMulti &&
-      (selContext[0].lastSelStatus === selContext[0].playerColor) // ||
-        // (selContext[0].lastSelStatus === POSITION_STATUS.NONE &&
-        //   selContext[0].playerColor !== POSITION_STATUS.BLACK))
+      selContext[0].lastSelStatus === selContext[0].playerColor // ||
+      // (selContext[0].lastSelStatus === POSITION_STATUS.NONE &&
+      //   selContext[0].playerColor !== POSITION_STATUS.BLACK))
     )
       return {
         action: ACTION.MOVE,
@@ -291,18 +298,22 @@ export async function updateGame(
       {
         'positions.$.status':
           selContext[0].lastSelStatus === 'NONE' // no selections; board is blank
-          // ? (selContext[0].playerColor === 'NONE' ? 'BLACK' : selContext[0].playerColor)
-          // result based on whether game is single player or multi player
-          ? (col === 'NONE' ? 'BLACK' : col) // makes the code a bit neater
-          : selContext[0].lastSelStatus === 'BLACK'
-          ? 'WHITE'  // otherwise, result determined by last selected position status
-          : 'BLACK',
+            ? // ? (selContext[0].playerColor === 'NONE' ? 'BLACK' : selContext[0].playerColor)
+              // result based on whether game is single player or multi player
+              col === 'NONE'
+              ? 'BLACK'
+              : col // makes the code a bit neater
+            : selContext[0].lastSelStatus === 'BLACK'
+            ? 'WHITE' // otherwise, result determined by last selected position status
+            : 'BLACK',
         $push: {
           selectedPositions: selContext[0].currentSelIndex,
         },
       },
       { new: true } // new option to true to return the document after update was applied.
-    ).populate('players.user', 'userName').exec();
+    )
+      .populate('players.user', 'userName')
+      .exec();
 
     // program will return here if no match for findOneAndUpdate'
     if (!doc) return { action: ACTION.MOVE, result: null };
@@ -316,7 +327,7 @@ export async function updateGame(
     );
 
     if (gameWon(doc.selectedPositions.slice(-1)[0], doc.positions, doc.size)) {
-      logger.info(`⚡️Game Won!`)
+      logger.info(`⚡️Game Won!`);
       console.log(
         'doc.selectedPositions.slice(-1)[0] = ',
         doc.selectedPositions.slice(-1)[0]
@@ -399,12 +410,7 @@ export async function updateGame(
         {
           $set: {
             messages: {
-              $concatArrays: [
-                '$messages',
-                [
-                  input.msg
-                ],
-              ],
+              $concatArrays: ['$messages', [input.msg]],
             },
           },
         },
@@ -455,7 +461,9 @@ export async function updateGame(
           },
         ],
         { new: true }
-      ).populate('players.user', 'userName').exec();
+      )
+        .populate('players.user', 'userName')
+        .exec();
 
       if (game) {
         return {
@@ -476,7 +484,9 @@ export async function updateGame(
           'players.user': new mongoose.Types.ObjectId(userId),
         },
         { $pull: { players: { user: userId } } }
-      ).populate('players.user', 'userName').exec(); 
+      )
+        .populate('players.user', 'userName')
+        .exec();
       // username of player leaving may be needed below, so "new" option is not used in this query
 
       if (doc) {
@@ -507,7 +517,9 @@ export async function updateGame(
         status: GAMESTATUS.ACTIVE,
         // 'players.user': userId,
         'players.user': new mongoose.Types.ObjectId(userId),
-      }).populate('players.user', 'userName').exec();
+      })
+        .populate('players.user', 'userName')
+        .exec();
 
       if (doc) {
         return { action: ACTION.REST, players: doc.players };
@@ -530,7 +542,9 @@ export async function updateGame(
         $set: { 'positions.$[].status': input.status, selectedPositions: [] },
       },
       { new: true }
-    ).populate('players.user', 'userName').exec();
+    )
+      .populate('players.user', 'userName')
+      .exec();
 
     if (doc) {
       return {

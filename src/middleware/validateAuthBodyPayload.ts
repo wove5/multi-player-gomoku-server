@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodObject, ZodRecord } from 'zod';
-import { UpdateGameSchemas } from '../schema/game.schema';
+import { UpdateGameSchemas } from '../schema/updateGameSchemas';
 
 const validate =
-  (schema: ZodRecord) =>
-  (req: Request, res: Response, next: NextFunction) => {
+  (schema: ZodRecord) => (req: Request, res: Response, next: NextFunction) => {
     try {
       schema.parse({
         ...req.body,

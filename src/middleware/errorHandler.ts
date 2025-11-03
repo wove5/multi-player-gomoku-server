@@ -8,10 +8,11 @@ export const errorHandler = (
   next: NextFunction
 ) => {
   console.log('Error', err.message);
+  console.log(err.stack);
 
   // res.status(err.status || 500).json({
   res.status(500).json({
-    status: 'error',
+    // stack: err.stack, // an idea.
     message: err.message || 'Internal Server Error',
   });
 };
