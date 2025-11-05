@@ -11,10 +11,10 @@ import gameHandler from './handler/game.handler';
 import authHandler from './handler/auth.handler';
 import { GameConnections } from './types';
 import { oaiSpec } from './openapi/oapiRegistry';
-import { SwaggerUIBundle } from 'swagger-ui-dist';
 import z from 'zod';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 import { errorHandler } from './middleware/errorHandler';
+import fs from 'fs';
 
 dotenv.config();
 console.log(`process.env.allowHost = ${process.env.allowHost}`);
@@ -23,26 +23,6 @@ const swaggerUi =
   process.env.allowHost === undefined
     ? require('swagger-ui-express')
     : undefined;
-
-// (async function setupSwagger() {
-//   if (swaggerUi) {
-//     import('swagger-ui-dist').then(({ SwaggerUIBundle }) => {
-//       SwaggerUIBundle({
-//         // dom_id: '#swagger-ui',
-//         // url: 'http://localhost:8080/api/api-docs',
-//         showCommonExtensions: true,
-//         showExtensions: true,
-//       });
-//     });
-//     // const swaggerUi = await require('swagger-ui-express');
-//     // app.use('/api/api-docs', swaggerUi.serve);
-//     // app.get('/api/api-docs', swaggerUi.setup(oaiSpec));
-//   }
-// })();
-
-// const swaggerUiBundle =
-//   process.env.allowHost === undefined
-//   ? await import('../node_modules/swagger-ui-dist')
 
 const gameConnections: GameConnections = {};
 
@@ -65,18 +45,31 @@ app.get('/healthcheck', (req: Request, res: Response) => {
 
 if (swaggerUi) {
   extendZodWithOpenApi(z);
-  // app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
-  const swaggerDocument = require('./openapi/openapi-docs.json');
-  app.use('/api/api-docs', swaggerUi.serve);
-  app.get(
-    '/api/api-docs',
-    // swaggerUi.setup(oaiSpec, {
-    //   // swaggerUi.setup(swaggerDocument, {
-    //   showCommonExtensions: true,
-    //   showExtensions: true,
-    // })
-    swaggerUi.setup(oaiSpec)
+  swaggerUi.setup(oaiSpec);
+  const swaggerUiAsset = require('swagger-ui-dist');
+  const swaggerUiAssetPath = swaggerUiAsset.getAbsoluteFSPath();
+  console.log('__dirname = ', __dirname);
+  console.log('swaggerUiAssetPath = ', swaggerUiAssetPath);
+  const customSwaggerInitializer = fs.readFileSync(
+    `${__dirname}/openapi/swagger-initializer.js`
   );
+  // intercept the request for swagger-initializer.js
+  app.get('/api/api-docs/swagger-initializer.js', (req, res) =>
+    res.send(customSwaggerInitializer)
+  );
+
+  // either:
+  const swaggerDocument = require('./openapi/swagger.json');
+  app.get('/api/api-docs/swagger.json', (req, res) => {
+    res.json(swaggerDocument);
+  });
+  // or:
+  // app.use(
+  //   '/api/api-docs/swagger.json',
+  //   express.static(`${__dirname}/openapi/swagger.json`)
+  // );
+
+  app.use('/api/api-docs', express.static(swaggerUiAssetPath));
 }
 
 app.use('/api/auth', authHandler);

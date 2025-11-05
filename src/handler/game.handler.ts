@@ -16,11 +16,7 @@ import {
   UpdateGameInput,
 } from '../schema/updateGameSchemas';
 
-import {
-  createGameSchema,
-  CreateGameInput,
-  CreateGameResponse,
-} from '../schema/createGameSchemas';
+import { createGameSchema, CreateGameInput } from '../schema/createGameSchemas';
 
 import {
   getIncompleteGames,

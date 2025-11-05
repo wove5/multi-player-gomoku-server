@@ -1,18 +1,23 @@
+import { string } from 'zod';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 import { Message } from './../types/Message';
 import {
   OpenAPIRegistry,
   OpenApiGeneratorV31,
 } from '@asteasolutions/zod-to-openapi';
 import { readUpdateDeleteGameParams } from '../schema/updateGameSchemas';
-
-import {
-  createGamePayload,
-  createGameResponseSchema,
-  gamestatusSchema,
-} from '../schema/createGameSchemas';
+import z from 'zod';
+import { createGamePayload } from '../schema/createGameSchemas';
+import { gameSchema } from '../schema/gameSchema';
+import { gamestatusSchema } from '../schema/gameSchema';
+import { objectIdStringSchema } from '../schema/objectIdStringSchema';
 
 import * as fs from 'fs';
 import { serverErrorSchema } from '../schema/serverErrorSchema';
+
+dotenv.config();
+const port = process.env.PORT;
 
 function isEmpty(obj: object) {
   for (const prop in obj) {
@@ -67,9 +72,88 @@ if (process.env.allowHost === undefined) {
         description: 'Game created',
         content: {
           'application/json': {
-            schema: createGameResponseSchema,
+            schema: gameSchema,
           },
         },
+      },
+      500: {
+        description: 'Server error',
+        content: {
+          'application/json': {
+            schema: serverErrorSchema,
+          },
+        },
+      },
+    },
+  });
+
+  const IdSchema = registry.registerParameter(
+    'id',
+    objectIdStringSchema.openapi({
+      param: {
+        name: 'id',
+        in: 'path',
+        description: 'The Game Id number',
+      },
+    })
+  );
+
+  registry.registerPath({
+    method: 'get',
+    tags: ['game'],
+    path: '/game/{id}',
+    description: 'Retrieve an incompleted game',
+    summary: 'Retrieve Game',
+    request: {
+      params: z.object({
+        id: IdSchema,
+      }),
+    },
+    responses: {
+      200: {
+        description: 'Game Object/document',
+        content: {
+          'application/json': {
+            schema: gameSchema,
+          },
+        },
+      },
+      404: {
+        description: 'Game not found in database',
+      },
+      500: {
+        description: 'Server error',
+        content: {
+          'application/json': {
+            schema: serverErrorSchema,
+          },
+        },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    tags: ['game'],
+    path: '/game-log/{id}',
+    description: 'Retrieve a completed game',
+    summary: 'Retrieve Game',
+    request: {
+      params: z.object({
+        id: objectIdStringSchema, // this works same as IdSchema
+      }),
+    },
+    responses: {
+      200: {
+        description: 'Game Object/document',
+        content: {
+          'application/json': {
+            schema: gameSchema,
+          },
+        },
+      },
+      404: {
+        description: 'Game not found in database',
       },
       500: {
         description: 'Server error',
@@ -93,7 +177,7 @@ if (process.env.allowHost === undefined) {
     },
     servers: [
       {
-        url: 'http://localhost:8080/api/api-docs',
+        url: `http://localhost:${port}/api/api-docs`,
       },
     ],
     tags: [{ name: 'game', description: 'All operations concerning a game' }],
@@ -101,7 +185,8 @@ if (process.env.allowHost === undefined) {
 
   if (!isEmpty(openApiSpec)) {
     fs.writeFileSync(
-      `${__dirname}/openapi-docs.json`,
+      // `${__dirname}/openapi-docs.json`,
+      `${__dirname}/swagger.json`,
       JSON.stringify(openApiSpec, null, 2),
       { encoding: 'utf-8' }
     );

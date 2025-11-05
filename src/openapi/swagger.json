@@ -1,0 +1,667 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Gomoku Game API",
+    "description": "Open API documentation for Gomoku Game"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8081/api/api-docs"
+    }
+  ],
+  "tags": [
+    {
+      "name": "game",
+      "description": "All operations concerning a game"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "id": {
+        "type": "string",
+        "minLength": 24,
+        "maxLength": 24,
+        "pattern": "^[0-9A-Fa-f]+$"
+      }
+    },
+    "parameters": {
+      "id": {
+        "schema": {
+          "$ref": "#/components/schemas/id"
+        },
+        "required": true,
+        "name": "id",
+        "in": "path",
+        "description": "The Game Id number"
+      }
+    }
+  },
+  "paths": {
+    "/": {
+      "post": {
+        "tags": [
+          "game"
+        ],
+        "description": "Create a new game",
+        "summary": "Create Game",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "size": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": 5,
+                      "maximum": 12
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "Dimensions of game grid: must be numbers in the range 5..12"
+                  },
+                  "isMulti": {
+                    "type": "boolean",
+                    "description": "Boolean flag indicates if game is multi-player or not"
+                  }
+                },
+                "required": [
+                  "size",
+                  "isMulti"
+                ]
+              },
+              "examples": {
+                "eg1": {
+                  "value": {
+                    "size": "[5, 5]",
+                    "isMulti": false
+                  }
+                },
+                "eg2": {
+                  "value": {
+                    "size": "[10, 10]",
+                    "isMulti": true
+                  }
+                },
+                "eg3": {
+                  "value": {
+                    "size": "[7, 7]",
+                    "isMulti": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Game created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": {
+                      "type": "string",
+                      "minLength": 24,
+                      "maxLength": 24,
+                      "pattern": "^[0-9A-Fa-f]+$"
+                    },
+                    "players": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "user": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "minLength": 24,
+                                "maxLength": 24,
+                                "pattern": "^[0-9A-Fa-f]+$"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "_id": {
+                                    "type": "string",
+                                    "minLength": 24,
+                                    "maxLength": 24,
+                                    "pattern": "^[0-9A-Fa-f]+$"
+                                  },
+                                  "userName": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "_id",
+                                  "userName"
+                                ]
+                              }
+                            ]
+                          },
+                          "color": {
+                            "type": "string",
+                            "enum": [
+                              "BLACK",
+                              "WHITE",
+                              "NONE"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "user",
+                          "color"
+                        ]
+                      }
+                    },
+                    "gameNumber": {
+                      "type": "number"
+                    },
+                    "isMulti": {
+                      "type": "boolean"
+                    },
+                    "size": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ACTIVE",
+                        "WON",
+                        "DRAWN"
+                      ]
+                    },
+                    "positions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "BLACK",
+                              "WHITE",
+                              "NONE"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ]
+                      }
+                    },
+                    "selectedPositions": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string"
+                          },
+                          "userId": {
+                            "type": "string"
+                          },
+                          "userName": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "message",
+                          "userId",
+                          "userName"
+                        ]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  },
+                  "required": [
+                    "_id",
+                    "players",
+                    "gameNumber",
+                    "isMulti",
+                    "size",
+                    "status",
+                    "positions",
+                    "selectedPositions",
+                    "messages",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/game/{id}": {
+      "get": {
+        "tags": [
+          "game"
+        ],
+        "description": "Retrieve an incompleted game",
+        "summary": "Retrieve Game",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game Object/document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": {
+                      "type": "string",
+                      "minLength": 24,
+                      "maxLength": 24,
+                      "pattern": "^[0-9A-Fa-f]+$"
+                    },
+                    "players": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "user": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "minLength": 24,
+                                "maxLength": 24,
+                                "pattern": "^[0-9A-Fa-f]+$"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "_id": {
+                                    "type": "string",
+                                    "minLength": 24,
+                                    "maxLength": 24,
+                                    "pattern": "^[0-9A-Fa-f]+$"
+                                  },
+                                  "userName": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "_id",
+                                  "userName"
+                                ]
+                              }
+                            ]
+                          },
+                          "color": {
+                            "type": "string",
+                            "enum": [
+                              "BLACK",
+                              "WHITE",
+                              "NONE"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "user",
+                          "color"
+                        ]
+                      }
+                    },
+                    "gameNumber": {
+                      "type": "number"
+                    },
+                    "isMulti": {
+                      "type": "boolean"
+                    },
+                    "size": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ACTIVE",
+                        "WON",
+                        "DRAWN"
+                      ]
+                    },
+                    "positions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "BLACK",
+                              "WHITE",
+                              "NONE"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ]
+                      }
+                    },
+                    "selectedPositions": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string"
+                          },
+                          "userId": {
+                            "type": "string"
+                          },
+                          "userName": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "message",
+                          "userId",
+                          "userName"
+                        ]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  },
+                  "required": [
+                    "_id",
+                    "players",
+                    "gameNumber",
+                    "isMulti",
+                    "size",
+                    "status",
+                    "positions",
+                    "selectedPositions",
+                    "messages",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Game not found in database"
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/game-log/{id}": {
+      "get": {
+        "tags": [
+          "game"
+        ],
+        "description": "Retrieve a completed game",
+        "summary": "Retrieve Game",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 24,
+              "maxLength": 24,
+              "pattern": "^[0-9A-Fa-f]+$"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game Object/document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": {
+                      "type": "string",
+                      "minLength": 24,
+                      "maxLength": 24,
+                      "pattern": "^[0-9A-Fa-f]+$"
+                    },
+                    "players": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "user": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "minLength": 24,
+                                "maxLength": 24,
+                                "pattern": "^[0-9A-Fa-f]+$"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "_id": {
+                                    "type": "string",
+                                    "minLength": 24,
+                                    "maxLength": 24,
+                                    "pattern": "^[0-9A-Fa-f]+$"
+                                  },
+                                  "userName": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "_id",
+                                  "userName"
+                                ]
+                              }
+                            ]
+                          },
+                          "color": {
+                            "type": "string",
+                            "enum": [
+                              "BLACK",
+                              "WHITE",
+                              "NONE"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "user",
+                          "color"
+                        ]
+                      }
+                    },
+                    "gameNumber": {
+                      "type": "number"
+                    },
+                    "isMulti": {
+                      "type": "boolean"
+                    },
+                    "size": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ACTIVE",
+                        "WON",
+                        "DRAWN"
+                      ]
+                    },
+                    "positions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "BLACK",
+                              "WHITE",
+                              "NONE"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ]
+                      }
+                    },
+                    "selectedPositions": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string"
+                          },
+                          "userId": {
+                            "type": "string"
+                          },
+                          "userName": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "message",
+                          "userId",
+                          "userName"
+                        ]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  },
+                  "required": [
+                    "_id",
+                    "players",
+                    "gameNumber",
+                    "isMulti",
+                    "size",
+                    "status",
+                    "positions",
+                    "selectedPositions",
+                    "messages",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Game not found in database"
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

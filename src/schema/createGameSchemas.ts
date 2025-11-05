@@ -8,62 +8,6 @@ import z, {
   record,
   ZodObject,
 } from 'zod';
-import { POSITION_STATUS, GAMESTATUS } from '../model/game.model';
-import mongoose from 'mongoose';
-
-const objectIdStringSchema = z
-  .string()
-  .regex(/^[0-9A-Fa-f]+$/, 'Invalid hexadecimal string')
-  .length(24)
-  .refine(
-    (val) => {
-      return (
-        mongoose.isObjectIdOrHexString(val) &&
-        new mongoose.Types.ObjectId(val).toString() === val
-      );
-    },
-    {
-      message: 'Invalid MongoDB ObjectId string',
-    }
-  );
-
-export const positionStatusSchema = z.enum(POSITION_STATUS);
-
-export const gamestatusSchema = z.enum(GAMESTATUS);
-
-const userDocumentSchema = z.object({
-  _id: objectIdStringSchema,
-  userName: z.string(),
-});
-
-const messageSchema = z.object({
-  message: z.string(),
-  userId: z.string(),
-  userName: z.string(),
-});
-
-const playerDetailSchema = z.object({
-  user: z.union([objectIdStringSchema, userDocumentSchema]),
-  color: positionStatusSchema,
-});
-
-export const createGameResponseSchema = z.object({
-  _id: objectIdStringSchema,
-  players: z.array(playerDetailSchema),
-  gameNumber: z.number(),
-  isMulti: z.boolean(),
-  size: z.array(z.number()),
-  status: gamestatusSchema,
-  positions: z.array(
-    z.object({
-      status: positionStatusSchema,
-    })
-  ),
-  selectedPositions: z.array(z.number()),
-  messages: z.array(messageSchema),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-});
 
 export const createGamePayload = object({
   size: array(
@@ -98,4 +42,4 @@ export const createGameSchema = object({
 }).openapi('CreateGameSchema');
 
 export type CreateGameInput = z.infer<typeof createGameSchema>;
-export type CreateGameResponse = z.infer<typeof createGameResponseSchema>;
+// export type CreateGameResponse = z.infer<typeof createGameResponseSchema>;
