@@ -18,6 +18,9 @@ import {
 import gameWon from '../util/gameWon';
 import { UpdateGameDBReturnType } from '../types';
 import logger from '../util/logger';
+import { IncompleteGamesArray } from '../schema/incompleteGamesSchema';
+import { CompletedGamesArray } from '../schema/completedGamesSchema';
+import { GameSchema } from '../schema/gameSchema';
 
 // mongoose.set('debug', true);
 
@@ -32,23 +35,27 @@ export interface UpdateResultDoc {
 
 export async function getIncompleteGames(
   userId: string
-): Promise<GameDocument[]> {
+  // ): Promise<GameDocument[]> {
+): Promise<IncompleteGamesArray> {
   logger.info(`⚡️[getIncompleteGames fnc]: entered`);
-  return await GameModel.find({
-    $or: [
-      {
-        'players.user': new mongoose.Types.ObjectId(userId),
-        status: { $eq: 'ACTIVE' },
-      },
-      {
-        isMulti: true,
-        status: GAMESTATUS.ACTIVE,
-        players: { $size: 1 },
-        // 'players.user': { $ne: userId },
-        'players.user': { $ne: new mongoose.Types.ObjectId(userId) },
-      },
-    ],
-  })
+  return await GameModel.find(
+    {
+      $or: [
+        {
+          'players.user': new mongoose.Types.ObjectId(userId),
+          status: { $eq: 'ACTIVE' },
+        },
+        {
+          isMulti: true,
+          status: GAMESTATUS.ACTIVE,
+          players: { $size: 1 },
+          // 'players.user': { $ne: userId },
+          'players.user': { $ne: new mongoose.Types.ObjectId(userId) },
+        },
+      ],
+    },
+    'gameNumber size isMulti createdAt players'
+  )
     .populate({ path: 'players.user', select: '_id userName' })
     .exec();
 
@@ -104,7 +111,9 @@ export async function getIncompleteGames(
 
 export async function getCompletedGames(
   userId: string
-): Promise<CompletedGameData[]> {
+  // ): Promise<GameDocument[]> {
+  // ): Promise<CompletedGameData[]> {
+): Promise<CompletedGamesArray> {
   logger.info(`⚡️[getCompletedGames fnc]: entered`);
   return await GameModel.aggregate([
     {
@@ -125,7 +134,21 @@ export async function getCompletedGames(
         },
       },
     },
+    {
+      $project: {
+        players: 0,
+        isMulti: 0,
+        positions: 0,
+        selectedPositions: 0,
+        messages: 0,
+      },
+    },
   ]).sort({ updatedAt: -1 });
+
+  // return await GameModel.find({
+  //   'players.user': new mongoose.Types.ObjectId(userId),
+  //   status: { $ne: 'ACTIVE' },
+  // });
 }
 
 export async function getIncompleteGame(
@@ -186,7 +209,7 @@ async function getNextSequence(name: string) {
 export async function createGame(
   input: CreateGameInput['body'],
   userId: string
-) {
+): Promise<GameSchema> {
   logger.info(`⚡️[createGame fnc]: entered`);
   const blankBoardPositions: Array<PositionInfo> = [
     ...Array(input.size[0] * input.size[1]),

@@ -1,13 +1,4 @@
-import z, {
-  string,
-  number,
-  array,
-  object,
-  void as void_,
-  boolean,
-  record,
-  ZodObject,
-} from 'zod';
+import z, { number, array, object, boolean } from 'zod';
 
 export const createGamePayload = object({
   size: array(
@@ -42,4 +33,3 @@ export const createGameSchema = object({
 }).openapi('CreateGameSchema');
 
 export type CreateGameInput = z.infer<typeof createGameSchema>;
-// export type CreateGameResponse = z.infer<typeof createGameResponseSchema>;

@@ -2,8 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ZodObject } from 'zod';
 
 const validate =
-  (schema: ZodObject) =>
-  (req: Request, res: Response, next: NextFunction) => {
+  (schema: ZodObject) => (req: Request, res: Response, next: NextFunction) => {
     try {
       schema.parse({
         body: req.body,

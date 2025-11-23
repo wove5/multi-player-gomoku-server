@@ -1,11 +1,12 @@
 import { DeleteGameDBResult } from './../interfaces/JoinLeaveGameReply';
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import WebSocket from 'ws';
 import { wss } from '../websocket';
 
 import validateSchema from '../middleware/validateSchema';
 import validateUpdateGameBodyPayload from '../middleware/validateUpdateGameBodyPayload';
 import validateUpdateGameSchema from '../middleware/validateUpdateGameSchema';
+import validateResponseSchema from '../middleware/validateResponseSchema';
 import { deserializeUser } from '../middleware/deserializeUser';
 
 import {
@@ -17,6 +18,15 @@ import {
 } from '../schema/updateGameSchemas';
 
 import { createGameSchema, CreateGameInput } from '../schema/createGameSchemas';
+import {
+  completedGamesArraySchema,
+  CompletedGamesArray,
+} from '../schema/completedGamesSchema';
+import {
+  incompleteGamesArraySchema,
+  IncompleteGamesArray,
+} from '../schema/incompleteGamesSchema';
+import { gameSchema, GameSchema } from '../schema/gameSchema';
 
 import {
   getIncompleteGames,
@@ -53,85 +63,150 @@ const gameHandler = express.Router();
 
 gameHandler.use(deserializeUser);
 
+// export interface TypedResponse<T extends Record<string, any>> extends Response {
+//   locals: T;
+// }
+
+interface TypedResponse<T> extends Response {
+  locals: { asyncData: T };
+}
+
 // Get incomplete games
-gameHandler.get('/', async (req: Request, res: Response) => {
-  const userId = req.userId;
-  // try {
-  const result = await getIncompleteGames(userId);
-  // array is returned, regardless of any games or not; in the latter case, result is []
-  return res.status(200).send(
-    result.map((g) => ({
-      _id: g._id,
-      gameNumber: g.gameNumber,
-      size: g.size,
-      isMulti: g.isMulti,
-      createdAt: g.createdAt,
-      players: g.players,
-    }))
-  );
-  // } catch (err: any) {
-  //   return res.status(500).send(err);
-  // }
-});
+gameHandler.get(
+  '/',
+  async (
+    req: Request<{}, IncompleteGamesArray, {}, {}>,
+    res: TypedResponse<IncompleteGamesArray>,
+    next: NextFunction
+  ) => {
+    const userId = req.userId;
+    // try {
+    const result = await getIncompleteGames(userId);
+    res.locals.asyncData = result;
+    next();
+    // array is returned, regardless of any games or not; in the latter case, result is []
+    // return res.status(200).send(
+    //   result.map((g) => ({
+    //     _id: g._id,
+    //     gameNumber: g.gameNumber,
+    //     size: g.size,
+    //     isMulti: g.isMulti,
+    //     createdAt: g.createdAt,
+    //     players: g.players,
+    //   }))
+    // );
+    // // } catch (err: any) {
+    // //   return res.status(500).send(err);
+    // // }
+  },
+  validateResponseSchema(incompleteGamesArraySchema),
+  (
+    req: Request<{}, IncompleteGamesArray, {}, {}>,
+    res: TypedResponse<IncompleteGamesArray>
+  ) => {
+    return res.status(200).send(res.locals.asyncData);
+  }
+);
 
 // Get completed games
-gameHandler.get('/games', async (req: Request, res: Response) => {
-  const userId = req.userId;
-  // try {
-  const result = await getCompletedGames(userId);
-  // // a bit more handling implemented here than in getIncompleteGames;
-  // if (result.length > 0) {
-  //   return res.status(200).send(
-  //     result.map((g) => ({
-  //       _id: g._id,
-  //       gameNumber: g.gameNumber,
-  //       size: g.size,
-  //       status: g.status,
-  //       lastSelectedPosition: g.lastSelectedPosition,
-  //       createdAt: g.createdAt,
-  //       updatedAt: g.updatedAt,
-  //     }))
-  //   );
-  // } else {
-  //   // set error message to 'Not Found', so client can use this.
-  //   return res.status(404).send('Not Found');
-  //   // return res.status(404).send(res.statusCode); // this gives a deprecation msg
-  // }
-  // it is incorrect to send a 404 Not Found when db finds no documents;
-  // just like in handler above for GET "/", a result should be sent out
-  // regardless of any documents found or not. sending [] will lead to
-  // correct behaviour on the client, particularly in the Game page, as
-  // described in commentary in the Games page in the client app.
-  return res.status(200).send(
-    result.map((g) => ({
-      _id: g._id,
-      gameNumber: g.gameNumber,
-      size: g.size,
-      status: g.status,
-      lastSelectedPosition: g.lastSelectedPosition,
-      createdAt: g.createdAt,
-      updatedAt: g.updatedAt,
-    }))
-  );
-  // } catch (err: any) {
-  //   return res.status(500).send(err);
-  // }
-});
+gameHandler.get(
+  '/games',
+  // async (req: Request, res: Response, next: NextFunction) => {
+  async (
+    // req: CustomRequest<CompletedGamesArray>,
+    // res: TypedResponse<CompletedGamesArray>,
+    req: Request<{}, CompletedGamesArray, {}, {}>,
+    // res: TypedResponse<CompletedGamesArray, CompletedGames>,
+    res: TypedResponse<CompletedGamesArray>,
+    next: NextFunction
+  ) => {
+    const userId = req.userId;
+    // try {
+    const result = await getCompletedGames(userId);
+    // req.asyncData = result;
+    res.locals.asyncData = result;
+    next();
+    // // a bit more handling implemented here than in getIncompleteGames;
+    // if (result.length > 0) {
+    //   return res.status(200).send(
+    //     result.map((g) => ({
+    //       _id: g._id,
+    //       gameNumber: g.gameNumber,
+    //       size: g.size,
+    //       status: g.status,
+    //       lastSelectedPosition: g.lastSelectedPosition,
+    //       createdAt: g.createdAt,
+    //       updatedAt: g.updatedAt,
+    //     }))
+    //   );
+    // } else {
+    //   // set error message to 'Not Found', so client can use this.
+    //   return res.status(404).send('Not Found');
+    //   // return res.status(404).send(res.statusCode); // this gives a deprecation msg
+    // }
+    // it is incorrect to send a 404 Not Found when db finds no documents;
+    // just like in handler above for GET "/", a result should be sent out
+    // regardless of any documents found or not. sending [] will lead to
+    // correct behaviour on the client, particularly in the Game page, as
+    // described in commentary in the Games page in the client app.
+    // return res.status(200).send(
+    //   result.map((g) => ({
+    //     _id: g._id,
+    //     gameNumber: g.gameNumber,
+    //     size: g.size,
+    //     status: g.status,
+    //     lastSelectedPosition: g.positions[g.selectedPositions.at(-1) ?? 0],
+    //     createdAt: g.createdAt,
+    //     updatedAt: g.updatedAt,
+    //   }))
+    // );
+    // validateResponseSchema(completedGamesArraySchema);
+    // return res.status(200).send(result);
+    // } catch (err: any) {
+    //   return res.status(500).send(err);
+    // }
+  },
+  validateResponseSchema(completedGamesArraySchema),
+  (
+    // req: CustomRequest<CompletedGamesArray>,
+    // res: TypedResponse<CompletedGamesArray>
+    req: Request<{}, CompletedGamesArray, {}, {}>,
+    res: TypedResponse<CompletedGamesArray>
+    // res: TypedResponse<CompletedGamesArray, CompletedGames>
+  ) => {
+    // return res.status(200).send(req.asyncData);
+    return res.status(200).send(res.locals.asyncData);
+    // return res.status(200).send("Hi");
+  }
+);
 
 // Create Game
 gameHandler.post(
   '/',
   validateSchema(createGameSchema),
   async (
-    req: Request<{}, GameDocument, CreateGameInput['body']>,
-    res: Response<GameDocument>
+    // req: Request<{}, GameDocument, CreateGameInput['body']>,
+    // res: TypedResponse<GameDocument>,
+    req: Request<{}, GameSchema, CreateGameInput['body']>,
+    res: TypedResponse<GameSchema>,
+    next: NextFunction
   ) => {
     // try { // Express 5 auto fwd to global err handler
     // console.log(x); // eg: this will thow err if x undefined, and propogate to global err handler
     const userId = req.userId;
     const gameReqBody = req.body;
     const newGame = await createGame(gameReqBody, userId);
-    return res.status(200).send(newGame);
+    res.locals.asyncData = newGame;
+    // console.log({ ...res.locals });
+    next();
+  },
+  validateResponseSchema(gameSchema),
+  (
+    req: Request<{}, GameSchema, CreateGameInput['body']>,
+    res: TypedResponse<GameSchema>
+  ) => {
+    // console.log({ ...res.locals });
+    return res.status(200).send(res.locals.asyncData);
     // } catch (err: any) {
     //   return res.status(500).send(err);
     // }
@@ -143,8 +218,11 @@ gameHandler.get(
   '/game/:id',
   validateSchema(readGameSchema),
   async (
-    req: Request<ReadGameInput['params'], GameDocument, {}>,
-    res: Response<GameDocument>
+    // req: Request<ReadGameInput['params'], GameDocument, {}>,
+    // res: TypedResponse<GameDocument>,
+    req: Request<ReadGameInput['params'], GameSchema, {}>,
+    res: TypedResponse<GameSchema>,
+    next: NextFunction
   ) => {
     // Express 5 automatically calls next() for route handlers returning Promises that reject or throw
     // try {
@@ -164,6 +242,8 @@ gameHandler.get(
       userId
     );
     if (isReEnterGameDBReply(result)) {
+      res.locals.asyncData = result.game;
+      validateResponseSchema(gameSchema);
       [...wss.clients]
         .filter(
           (client) =>
@@ -183,17 +263,24 @@ gameHandler.get(
             })
           );
         });
-      return res.status(200).send(result.game);
+      next();
     } else if (isNoDBReply(result)) {
       logger.info(`⚡️[server]: Incomplete Game, gameId ${gameId}, not found.`);
       return res.sendStatus(404);
     } else {
       // throw new Error('Problem with server');
-      return res.sendStatus(400);
+      // return res.sendStatus(400);
+      return res.sendStatus(500);
     } // never throw errors intentionally. Errors are for exceptions.
     // } catch (err: any) {
     //   return res.status(500).send(err);
     // }
+  },
+  (
+    req: Request<ReadGameInput['params'], GameSchema, {}>,
+    res: TypedResponse<GameSchema>
+  ) => {
+    return res.status(200).send(res.locals.asyncData);
   }
 );
 
@@ -202,8 +289,11 @@ gameHandler.get(
   '/game-log/:id',
   validateSchema(readGameSchema),
   async (
-    req: Request<ReadGameInput['params'], GameDocument, {}>,
-    res: Response<GameDocument>
+    // req: Request<ReadGameInput['params'], GameDocument, {}>,
+    // res: TypedResponse<GameDocument>
+    req: Request<ReadGameInput['params'], GameSchema, {}>,
+    res: TypedResponse<GameSchema>,
+    next: NextFunction
   ) => {
     // try {
     const userId = req.userId;
@@ -217,7 +307,9 @@ gameHandler.get(
     const result = await getCompletedGame(gameId, userId);
 
     if (isRetrieveGameDBReply(result)) {
-      return res.status(200).json(result.game);
+      res.locals.asyncData = result.game;
+      validateResponseSchema(gameSchema);
+      next();
     } else if (isNoDBReply(result)) {
       return res.sendStatus(404);
     } else {
@@ -226,6 +318,12 @@ gameHandler.get(
     // } catch (err: any) {
     //   return res.status(500).send(err);
     // }
+  },
+  (
+    req: Request<ReadGameInput['params'], GameSchema, {}>,
+    res: TypedResponse<GameSchema>
+  ) => {
+    return res.status(200).json(res.locals.asyncData);
   }
 );
 
@@ -240,7 +338,7 @@ gameHandler.put(
       UpdateGameResponseType,
       UpdateGameInput['body']
     >,
-    res: Response<UpdateGameResponseType>
+    res: TypedResponse<UpdateGameResponseType>
   ) => {
     // try {
     const result: UpdateGameDBReturnType = await updateGame(

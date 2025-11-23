@@ -14,37 +14,157 @@
     {
       "name": "game",
       "description": "All operations concerning a game"
+    },
+    {
+      "name": "games",
+      "description": "Operations retrieving details of multiple games"
     }
   ],
   "components": {
     "schemas": {
-      "id": {
+      "ObjectIdStringSchema": {
         "type": "string",
         "minLength": 24,
         "maxLength": 24,
-        "pattern": "^[0-9A-Fa-f]+$"
+        "pattern": "^[0-9A-Fa-f]+$",
+        "description": "MongoDB ObjectId as a string"
+      },
+      "ObjectIdSchema": {
+        "type": "string",
+        "description": "Game Id | Player Id | Position Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
       }
     },
-    "parameters": {
-      "id": {
-        "schema": {
-          "$ref": "#/components/schemas/id"
-        },
-        "required": true,
-        "name": "id",
-        "in": "path",
-        "description": "The Game Id number"
-      }
-    }
+    "parameters": {}
   },
   "paths": {
     "/": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Retrieve incomplete Games",
+        "description": "Retrieve all incomplete games",
+        "responses": {
+          "200": {
+            "description": "Retrieved incomplete games",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "_id": {
+                        "type": "string",
+                        "description": "Game Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
+                      },
+                      "gameNumber": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "size": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 5,
+                          "maximum": 12
+                        },
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "Dimensions of the game board grid:\n\n must be numbers in the range 5..12"
+                      },
+                      "isMulti": {
+                        "type": "boolean"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "players": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "user": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "description": "Player Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "_id": {
+                                      "type": "string",
+                                      "description": "Player Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
+                                    },
+                                    "userName": {
+                                      "type": "string",
+                                      "description": "Player's username"
+                                    }
+                                  },
+                                  "required": [
+                                    "_id",
+                                    "userName"
+                                  ]
+                                }
+                              ]
+                            },
+                            "color": {
+                              "type": "string",
+                              "enum": [
+                                "BLACK",
+                                "WHITE",
+                                "NONE"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "user",
+                            "color"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "_id",
+                      "gameNumber",
+                      "size",
+                      "isMulti",
+                      "createdAt",
+                      "players"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "game"
         ],
+        "summary": "Create new Game",
         "description": "Create a new game",
-        "summary": "Create Game",
         "requestBody": {
           "required": true,
           "content": {
@@ -106,9 +226,7 @@
                   "properties": {
                     "_id": {
                       "type": "string",
-                      "minLength": 24,
-                      "maxLength": 24,
-                      "pattern": "^[0-9A-Fa-f]+$"
+                      "description": "Game Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
                     },
                     "players": {
                       "type": "array",
@@ -119,21 +237,18 @@
                             "anyOf": [
                               {
                                 "type": "string",
-                                "minLength": 24,
-                                "maxLength": 24,
-                                "pattern": "^[0-9A-Fa-f]+$"
+                                "description": "Player Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
                               },
                               {
                                 "type": "object",
                                 "properties": {
                                   "_id": {
                                     "type": "string",
-                                    "minLength": 24,
-                                    "maxLength": 24,
-                                    "pattern": "^[0-9A-Fa-f]+$"
+                                    "description": "Player Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
                                   },
                                   "userName": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "description": "Player's username"
                                   }
                                 },
                                 "required": [
@@ -159,7 +274,8 @@
                       }
                     },
                     "gameNumber": {
-                      "type": "number"
+                      "type": "integer",
+                      "exclusiveMinimum": 0
                     },
                     "isMulti": {
                       "type": "boolean"
@@ -167,8 +283,13 @@
                     "size": {
                       "type": "array",
                       "items": {
-                        "type": "number"
-                      }
+                        "type": "integer",
+                        "minimum": 5,
+                        "maximum": 12
+                      },
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "description": "Dimensions of the game board grid:\n\n must be numbers in the range 5..12"
                     },
                     "status": {
                       "type": "string",
@@ -183,6 +304,10 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "Game board Position Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
+                          },
                           "status": {
                             "type": "string",
                             "enum": [
@@ -193,6 +318,7 @@
                           }
                         },
                         "required": [
+                          "_id",
                           "status"
                         ]
                       }
@@ -212,7 +338,11 @@
                             "type": "string"
                           },
                           "userId": {
-                            "type": "string"
+                            "type": "string",
+                            "minLength": 24,
+                            "maxLength": 24,
+                            "pattern": "^[0-9A-Fa-f]+$",
+                            "description": "MongoDB ObjectId as a string"
                           },
                           "userName": {
                             "type": "string"
@@ -272,16 +402,132 @@
         }
       }
     },
+    "/games": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Retrieve completed Games",
+        "description": "Retrieve all completed games",
+        "responses": {
+          "200": {
+            "description": "Retrieved completed games",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "_id": {
+                        "type": "string",
+                        "description": "Game Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
+                      },
+                      "gameNumber": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "size": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 5,
+                          "maximum": 12
+                        },
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "Dimensions of the game board grid:\n\n must be numbers in the range 5..12"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "ACTIVE",
+                          "WON",
+                          "DRAWN"
+                        ]
+                      },
+                      "lastSelectedPosition": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "Position Id of last selected board position:\n\nmongodb ObjectId = 24 character hexidecimal string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "BLACK",
+                              "WHITE",
+                              "NONE"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "_id",
+                          "status"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date"
+                      }
+                    },
+                    "required": [
+                      "_id",
+                      "gameNumber",
+                      "size",
+                      "status",
+                      "lastSelectedPosition",
+                      "createdAt",
+                      "updatedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/game/{id}": {
       "get": {
         "tags": [
           "game"
         ],
+        "summary": "Retrieve incomplete Game",
         "description": "Retrieve an incompleted game",
-        "summary": "Retrieve Game",
         "parameters": [
           {
-            "$ref": "#/components/parameters/id"
+            "schema": {
+              "type": "string",
+              "description": "The Game id number:\n\nmongodb ObjectId = 24 character hexidecimal string"
+            },
+            "required": true,
+            "description": "The Game id number:\n\nmongodb ObjectId = 24 character hexidecimal string",
+            "name": "id",
+            "in": "path"
           }
         ],
         "responses": {
@@ -294,9 +540,7 @@
                   "properties": {
                     "_id": {
                       "type": "string",
-                      "minLength": 24,
-                      "maxLength": 24,
-                      "pattern": "^[0-9A-Fa-f]+$"
+                      "description": "Game Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
                     },
                     "players": {
                       "type": "array",
@@ -307,21 +551,18 @@
                             "anyOf": [
                               {
                                 "type": "string",
-                                "minLength": 24,
-                                "maxLength": 24,
-                                "pattern": "^[0-9A-Fa-f]+$"
+                                "description": "Player Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
                               },
                               {
                                 "type": "object",
                                 "properties": {
                                   "_id": {
                                     "type": "string",
-                                    "minLength": 24,
-                                    "maxLength": 24,
-                                    "pattern": "^[0-9A-Fa-f]+$"
+                                    "description": "Player Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
                                   },
                                   "userName": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "description": "Player's username"
                                   }
                                 },
                                 "required": [
@@ -347,7 +588,8 @@
                       }
                     },
                     "gameNumber": {
-                      "type": "number"
+                      "type": "integer",
+                      "exclusiveMinimum": 0
                     },
                     "isMulti": {
                       "type": "boolean"
@@ -355,8 +597,13 @@
                     "size": {
                       "type": "array",
                       "items": {
-                        "type": "number"
-                      }
+                        "type": "integer",
+                        "minimum": 5,
+                        "maximum": 12
+                      },
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "description": "Dimensions of the game board grid:\n\n must be numbers in the range 5..12"
                     },
                     "status": {
                       "type": "string",
@@ -371,6 +618,10 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "Game board Position Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
+                          },
                           "status": {
                             "type": "string",
                             "enum": [
@@ -381,6 +632,7 @@
                           }
                         },
                         "required": [
+                          "_id",
                           "status"
                         ]
                       }
@@ -400,7 +652,11 @@
                             "type": "string"
                           },
                           "userId": {
-                            "type": "string"
+                            "type": "string",
+                            "minLength": 24,
+                            "maxLength": 24,
+                            "pattern": "^[0-9A-Fa-f]+$",
+                            "description": "MongoDB ObjectId as a string"
                           },
                           "userName": {
                             "type": "string"
@@ -468,17 +724,16 @@
         "tags": [
           "game"
         ],
+        "summary": "Retrieve completed Game",
         "description": "Retrieve a completed game",
-        "summary": "Retrieve Game",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "minLength": 24,
-              "maxLength": 24,
-              "pattern": "^[0-9A-Fa-f]+$"
+              "description": "The Game Id number:\n\nmongodb ObjectId = 24 character hexidecimal string"
             },
             "required": true,
+            "description": "The Game Id number:\n\nmongodb ObjectId = 24 character hexidecimal string",
             "name": "id",
             "in": "path"
           }
@@ -493,9 +748,7 @@
                   "properties": {
                     "_id": {
                       "type": "string",
-                      "minLength": 24,
-                      "maxLength": 24,
-                      "pattern": "^[0-9A-Fa-f]+$"
+                      "description": "Game Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
                     },
                     "players": {
                       "type": "array",
@@ -506,21 +759,18 @@
                             "anyOf": [
                               {
                                 "type": "string",
-                                "minLength": 24,
-                                "maxLength": 24,
-                                "pattern": "^[0-9A-Fa-f]+$"
+                                "description": "Player Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
                               },
                               {
                                 "type": "object",
                                 "properties": {
                                   "_id": {
                                     "type": "string",
-                                    "minLength": 24,
-                                    "maxLength": 24,
-                                    "pattern": "^[0-9A-Fa-f]+$"
+                                    "description": "Player Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
                                   },
                                   "userName": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "description": "Player's username"
                                   }
                                 },
                                 "required": [
@@ -546,7 +796,8 @@
                       }
                     },
                     "gameNumber": {
-                      "type": "number"
+                      "type": "integer",
+                      "exclusiveMinimum": 0
                     },
                     "isMulti": {
                       "type": "boolean"
@@ -554,8 +805,13 @@
                     "size": {
                       "type": "array",
                       "items": {
-                        "type": "number"
-                      }
+                        "type": "integer",
+                        "minimum": 5,
+                        "maximum": 12
+                      },
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "description": "Dimensions of the game board grid:\n\n must be numbers in the range 5..12"
                     },
                     "status": {
                       "type": "string",
@@ -570,6 +826,10 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "Game board Position Id:\n\nmongodb ObjectId = 24 character hexidecimal string"
+                          },
                           "status": {
                             "type": "string",
                             "enum": [
@@ -580,6 +840,7 @@
                           }
                         },
                         "required": [
+                          "_id",
                           "status"
                         ]
                       }
@@ -599,7 +860,11 @@
                             "type": "string"
                           },
                           "userId": {
-                            "type": "string"
+                            "type": "string",
+                            "minLength": 24,
+                            "maxLength": 24,
+                            "pattern": "^[0-9A-Fa-f]+$",
+                            "description": "MongoDB ObjectId as a string"
                           },
                           "userName": {
                             "type": "string"

@@ -1,7 +1,4 @@
-import { string } from 'zod';
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import { Message } from './../types/Message';
 import {
   OpenAPIRegistry,
   OpenApiGeneratorV31,
@@ -11,10 +8,17 @@ import z from 'zod';
 import { createGamePayload } from '../schema/createGameSchemas';
 import { gameSchema } from '../schema/gameSchema';
 import { gamestatusSchema } from '../schema/gameSchema';
-import { objectIdStringSchema } from '../schema/objectIdStringSchema';
+import {
+  objectIdStringSchema,
+  objectIdSchema,
+  objectId,
+} from '../schema/objectIdStringSchema';
 
 import * as fs from 'fs';
 import { serverErrorSchema } from '../schema/serverErrorSchema';
+import { incompleteGamesArraySchema } from '../schema/incompleteGamesSchema';
+import { completedGamesArraySchema } from '../schema/completedGamesSchema';
+import exp from 'constants';
 
 dotenv.config();
 const port = process.env.PORT;
@@ -30,13 +34,64 @@ let openApiSpec;
 
 if (process.env.allowHost === undefined) {
   const registry = new OpenAPIRegistry();
+  registry.registerPath({
+    method: 'get',
+    tags: ['games'],
+    path: '/',
+    summary: 'Retrieve incomplete Games',
+    description: 'Retrieve all incomplete games',
+    responses: {
+      200: {
+        description: 'Retrieved incomplete games',
+        content: {
+          'application/json': {
+            schema: incompleteGamesArraySchema,
+          },
+        },
+      },
+      500: {
+        description: 'Server error',
+        content: {
+          'application/json': {
+            schema: serverErrorSchema,
+          },
+        },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    tags: ['games'],
+    path: '/games',
+    summary: 'Retrieve completed Games',
+    description: 'Retrieve all completed games',
+    responses: {
+      200: {
+        description: 'Retrieved completed games',
+        content: {
+          'application/json': {
+            schema: completedGamesArraySchema,
+          },
+        },
+      },
+      500: {
+        description: 'Server error',
+        content: {
+          'application/json': {
+            schema: serverErrorSchema,
+          },
+        },
+      },
+    },
+  });
 
   registry.registerPath({
     method: 'post',
     tags: ['game'],
     path: '/',
+    summary: 'Create new Game',
     description: 'Create a new game',
-    summary: 'Create Game',
     request: {
       body: {
         content: {
@@ -87,26 +142,22 @@ if (process.env.allowHost === undefined) {
     },
   });
 
-  const IdSchema = registry.registerParameter(
-    'id',
-    objectIdStringSchema.openapi({
-      param: {
-        name: 'id',
-        in: 'path',
-        description: 'The Game Id number',
-      },
-    })
+  const IdSchema = registry.register(
+    'ObjectIdStringSchema',
+    objectIdStringSchema
   );
+
+  registry.register('ObjectIdSchema', objectId);
 
   registry.registerPath({
     method: 'get',
     tags: ['game'],
     path: '/game/{id}',
+    summary: 'Retrieve incomplete Game',
     description: 'Retrieve an incompleted game',
-    summary: 'Retrieve Game',
     request: {
       params: z.object({
-        id: IdSchema,
+        id: objectIdSchema('The Game id number'),
       }),
     },
     responses: {
@@ -136,11 +187,11 @@ if (process.env.allowHost === undefined) {
     method: 'get',
     tags: ['game'],
     path: '/game-log/{id}',
+    summary: 'Retrieve completed Game',
     description: 'Retrieve a completed game',
-    summary: 'Retrieve Game',
     request: {
       params: z.object({
-        id: objectIdStringSchema, // this works same as IdSchema
+        id: objectIdSchema('The Game Id number'),
       }),
     },
     responses: {
@@ -168,6 +219,14 @@ if (process.env.allowHost === undefined) {
 
   const generator = new OpenApiGeneratorV31(registry.definitions);
 
+  // TODO: find a way to access the Express req object to
+  // TODO: extract the hostIp of the origin to replace the
+  // TODO: hard coded "localhost" in the url prop of servers
+  //   req.headers.origin !== 'http://localhost:3000' &&
+  // req.headers.origin !== `http://${hostIp}:3000`)
+  // const hostIp = req.headers.host?.split(':')[0];
+  // console.log(`hostIp = ${hostIp}`);
+
   openApiSpec = generator.generateDocument({
     openapi: '3.1.0',
     info: {
@@ -180,12 +239,17 @@ if (process.env.allowHost === undefined) {
         url: `http://localhost:${port}/api/api-docs`,
       },
     ],
-    tags: [{ name: 'game', description: 'All operations concerning a game' }],
+    tags: [
+      { name: 'game', description: 'All operations concerning a game' },
+      {
+        name: 'games',
+        description: 'Operations retrieving details of multiple games',
+      },
+    ],
   });
 
   if (!isEmpty(openApiSpec)) {
     fs.writeFileSync(
-      // `${__dirname}/openapi-docs.json`,
       `${__dirname}/swagger.json`,
       JSON.stringify(openApiSpec, null, 2),
       { encoding: 'utf-8' }

@@ -8,7 +8,7 @@ import {
   RegisterInput,
   registerSchema,
   loginSchema,
-  assertAuthPayloadShape
+  assertAuthPayloadShape,
 } from '../schema/auth.schema';
 import { signJwt } from '../util/jwt';
 import { AuthResponse } from '../types';
@@ -19,7 +19,10 @@ authHandler.post(
   '/register',
   validateAuthBodyPayload(assertAuthPayloadShape),
   // validateSchema(registerSchema),
-  async (req: Request<{}, AuthResponse, RegisterInput['body']>, res: Response<AuthResponse>) => {
+  async (
+    req: Request<{}, AuthResponse, RegisterInput['body']>,
+    res: TypedResponse<AuthResponse>
+  ) => {
     try {
       const { username, password } = req.body;
 
@@ -28,7 +31,9 @@ authHandler.post(
       const existingUser = await getUserByUsername(username);
 
       if (existingUser) {
-        return res.status(409).send({message: 'User Already Exists. Please Login'});
+        return res
+          .status(409)
+          .send({ message: 'User Already Exists. Please Login' });
       }
 
       //Encrypt user password
@@ -55,7 +60,10 @@ authHandler.post(
   '/login',
   validateAuthBodyPayload(assertAuthPayloadShape),
   // validateSchema(loginSchema),
-  async (req: Request<{}, AuthResponse, LoginInput['body']>, res: Response<AuthResponse>) => {
+  async (
+    req: Request<{}, AuthResponse, LoginInput['body']>,
+    res: TypedResponse<AuthResponse>
+  ) => {
     try {
       // Get user input
       const { username, password } = req.body;
@@ -69,7 +77,7 @@ authHandler.post(
         // user
         return res.status(200).json({ _id: user._id, token });
       }
-      return res.status(400).send({message: 'Invalid Credentials'});
+      return res.status(400).send({ message: 'Invalid Credentials' });
     } catch (err: any) {
       return res.status(500).send(err.message);
     }

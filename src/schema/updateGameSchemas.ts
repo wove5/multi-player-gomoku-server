@@ -1,14 +1,4 @@
-import z, {
-  string,
-  number,
-  array,
-  object,
-  void as void_,
-  boolean,
-  record,
-  ZodObject,
-} from 'zod';
-import { POSITION_STATUS, GAMESTATUS } from '../model/game.model';
+import z, { string, object, record, ZodObject } from 'zod';
 import mongoose from 'mongoose';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 

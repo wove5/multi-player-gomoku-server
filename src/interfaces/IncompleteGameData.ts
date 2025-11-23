@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-import { PlayerDetail, UserDetail } from '../types';
+import { PlayerDetail } from '../types';
+
 export interface IncompleteGameData {
   _id: mongoose.Types.ObjectId;
   gameNumber: number;

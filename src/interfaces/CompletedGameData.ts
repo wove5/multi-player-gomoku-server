@@ -8,7 +8,7 @@ export interface CompletedGameData {
   status: GAMESTATUS;
   lastSelectedPosition: {
     status: POSITION_STATUS;
-    _id: string;
+    _id: mongoose.Types.ObjectId;
   };
   createdAt: Date;
   updatedAt: Date;
