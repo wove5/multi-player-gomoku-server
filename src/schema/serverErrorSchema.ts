@@ -4,4 +4,4 @@ export const serverErrorSchema = z.object({
   message: z.string(),
 });
 
-export type ServerErrorSchema = z.infer<typeof serverErrorSchema>;
+export type ServerError = z.infer<typeof serverErrorSchema>;

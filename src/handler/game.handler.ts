@@ -26,7 +26,7 @@ import {
   incompleteGamesArraySchema,
   IncompleteGamesArray,
 } from '../schema/incompleteGamesSchema';
-import { gameSchema, GameSchema } from '../schema/gameSchema';
+import { gameSchema, Game } from '../schema/gameSchema';
 
 import {
   getIncompleteGames,
@@ -187,8 +187,8 @@ gameHandler.post(
   async (
     // req: Request<{}, GameDocument, CreateGameInput['body']>,
     // res: TypedResponse<GameDocument>,
-    req: Request<{}, GameSchema, CreateGameInput['body']>,
-    res: TypedResponse<GameSchema>,
+    req: Request<{}, Game, CreateGameInput['body']>,
+    res: TypedResponse<Game>,
     next: NextFunction
   ) => {
     // try { // Express 5 auto fwd to global err handler
@@ -202,8 +202,8 @@ gameHandler.post(
   },
   validateResponseSchema(gameSchema),
   (
-    req: Request<{}, GameSchema, CreateGameInput['body']>,
-    res: TypedResponse<GameSchema>
+    req: Request<{}, Game, CreateGameInput['body']>,
+    res: TypedResponse<Game>
   ) => {
     // console.log({ ...res.locals });
     return res.status(200).send(res.locals.asyncData);
@@ -220,8 +220,8 @@ gameHandler.get(
   async (
     // req: Request<ReadGameInput['params'], GameDocument, {}>,
     // res: TypedResponse<GameDocument>,
-    req: Request<ReadGameInput['params'], GameSchema, {}>,
-    res: TypedResponse<GameSchema>,
+    req: Request<ReadGameInput['params'], Game, {}>,
+    res: TypedResponse<Game>,
     next: NextFunction
   ) => {
     // Express 5 automatically calls next() for route handlers returning Promises that reject or throw
@@ -277,8 +277,8 @@ gameHandler.get(
     // }
   },
   (
-    req: Request<ReadGameInput['params'], GameSchema, {}>,
-    res: TypedResponse<GameSchema>
+    req: Request<ReadGameInput['params'], Game, {}>,
+    res: TypedResponse<Game>
   ) => {
     return res.status(200).send(res.locals.asyncData);
   }
@@ -291,8 +291,8 @@ gameHandler.get(
   async (
     // req: Request<ReadGameInput['params'], GameDocument, {}>,
     // res: TypedResponse<GameDocument>
-    req: Request<ReadGameInput['params'], GameSchema, {}>,
-    res: TypedResponse<GameSchema>,
+    req: Request<ReadGameInput['params'], Game, {}>,
+    res: TypedResponse<Game>,
     next: NextFunction
   ) => {
     // try {
@@ -320,8 +320,8 @@ gameHandler.get(
     // }
   },
   (
-    req: Request<ReadGameInput['params'], GameSchema, {}>,
-    res: TypedResponse<GameSchema>
+    req: Request<ReadGameInput['params'], Game, {}>,
+    res: TypedResponse<Game>
   ) => {
     return res.status(200).json(res.locals.asyncData);
   }

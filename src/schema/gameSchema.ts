@@ -46,4 +46,4 @@ export const gameSchema = z.object({
   updatedAt: z.date(),
 });
 
-export type GameSchema = z.infer<typeof gameSchema>;
+export type Game = z.infer<typeof gameSchema>;

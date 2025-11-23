@@ -6,8 +6,6 @@ import {
 import { readUpdateDeleteGameParams } from '../schema/updateGameSchemas';
 import z from 'zod';
 import { createGamePayload } from '../schema/createGameSchemas';
-import { gameSchema } from '../schema/gameSchema';
-import { gamestatusSchema } from '../schema/gameSchema';
 import {
   objectIdStringSchema,
   objectIdSchema,
@@ -18,7 +16,7 @@ import * as fs from 'fs';
 import { serverErrorSchema } from '../schema/serverErrorSchema';
 import { incompleteGamesArraySchema } from '../schema/incompleteGamesSchema';
 import { completedGamesArraySchema } from '../schema/completedGamesSchema';
-import exp from 'constants';
+import { gameSchema } from '../schema/gameSchema';
 
 dotenv.config();
 const port = process.env.PORT;
@@ -34,6 +32,31 @@ let openApiSpec;
 
 if (process.env.allowHost === undefined) {
   const registry = new OpenAPIRegistry();
+
+  const IdSchema = registry.register(
+    'ObjectIdStringSchema',
+    objectIdStringSchema
+  );
+
+  registry.register('ObjectIdSchema', objectId);
+
+  const GameSchema = registry.register('GameSchema', gameSchema);
+
+  const IncompleteGamesArraySchema = registry.register(
+    'IncompleteGamesArraySchema',
+    incompleteGamesArraySchema
+  );
+
+  const CompletedGamesArraySchema = registry.register(
+    'CompletedGamesArraySchema',
+    completedGamesArraySchema
+  );
+
+  const ServerErrorSchema = registry.register(
+    'ServerErrorSchema',
+    serverErrorSchema
+  );
+
   registry.registerPath({
     method: 'get',
     tags: ['games'],
@@ -45,7 +68,7 @@ if (process.env.allowHost === undefined) {
         description: 'Retrieved incomplete games',
         content: {
           'application/json': {
-            schema: incompleteGamesArraySchema,
+            schema: IncompleteGamesArraySchema,
           },
         },
       },
@@ -53,7 +76,7 @@ if (process.env.allowHost === undefined) {
         description: 'Server error',
         content: {
           'application/json': {
-            schema: serverErrorSchema,
+            schema: ServerErrorSchema,
           },
         },
       },
@@ -71,7 +94,7 @@ if (process.env.allowHost === undefined) {
         description: 'Retrieved completed games',
         content: {
           'application/json': {
-            schema: completedGamesArraySchema,
+            schema: CompletedGamesArraySchema,
           },
         },
       },
@@ -79,7 +102,7 @@ if (process.env.allowHost === undefined) {
         description: 'Server error',
         content: {
           'application/json': {
-            schema: serverErrorSchema,
+            schema: ServerErrorSchema,
           },
         },
       },
@@ -127,7 +150,7 @@ if (process.env.allowHost === undefined) {
         description: 'Game created',
         content: {
           'application/json': {
-            schema: gameSchema,
+            schema: GameSchema,
           },
         },
       },
@@ -135,19 +158,12 @@ if (process.env.allowHost === undefined) {
         description: 'Server error',
         content: {
           'application/json': {
-            schema: serverErrorSchema,
+            schema: ServerErrorSchema,
           },
         },
       },
     },
   });
-
-  const IdSchema = registry.register(
-    'ObjectIdStringSchema',
-    objectIdStringSchema
-  );
-
-  registry.register('ObjectIdSchema', objectId);
 
   registry.registerPath({
     method: 'get',
@@ -165,7 +181,7 @@ if (process.env.allowHost === undefined) {
         description: 'Game Object/document',
         content: {
           'application/json': {
-            schema: gameSchema,
+            schema: GameSchema,
           },
         },
       },
@@ -176,7 +192,7 @@ if (process.env.allowHost === undefined) {
         description: 'Server error',
         content: {
           'application/json': {
-            schema: serverErrorSchema,
+            schema: ServerErrorSchema,
           },
         },
       },
@@ -199,7 +215,7 @@ if (process.env.allowHost === undefined) {
         description: 'Game Object/document',
         content: {
           'application/json': {
-            schema: gameSchema,
+            schema: GameSchema,
           },
         },
       },
@@ -210,7 +226,7 @@ if (process.env.allowHost === undefined) {
         description: 'Server error',
         content: {
           'application/json': {
-            schema: serverErrorSchema,
+            schema: ServerErrorSchema,
           },
         },
       },

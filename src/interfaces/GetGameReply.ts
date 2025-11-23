@@ -1,21 +1,21 @@
 import { GameDocument } from '../model/game.model';
 import { ACTION } from '../constants';
-import { GameSchema } from '../schema/gameSchema';
+import { Game } from '../schema/gameSchema';
 
 export interface RetrieveGameDBReply {
   action: ACTION;
-  game: GameSchema;
+  game: Game;
 }
 
 export interface RetrieveGameResponse {
-  game: GameSchema;
+  game: Game;
 }
 
 export interface ReEnterGameDBReply {
   action: ACTION;
-  game: GameSchema;
+  game: Game;
 }
 
 export interface ReEnterGameResponse {
-  game: GameSchema;
+  game: Game;
 }

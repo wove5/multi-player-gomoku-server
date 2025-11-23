@@ -20,7 +20,7 @@ import { UpdateGameDBReturnType } from '../types';
 import logger from '../util/logger';
 import { IncompleteGamesArray } from '../schema/incompleteGamesSchema';
 import { CompletedGamesArray } from '../schema/completedGamesSchema';
-import { GameSchema } from '../schema/gameSchema';
+import { Game } from '../schema/gameSchema';
 
 // mongoose.set('debug', true);
 
@@ -209,7 +209,7 @@ async function getNextSequence(name: string) {
 export async function createGame(
   input: CreateGameInput['body'],
   userId: string
-): Promise<GameSchema> {
+): Promise<Game> {
   logger.info(`⚡️[createGame fnc]: entered`);
   const blankBoardPositions: Array<PositionInfo> = [
     ...Array(input.size[0] * input.size[1]),

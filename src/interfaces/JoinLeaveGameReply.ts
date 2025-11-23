@@ -2,15 +2,15 @@ import { UserDetail } from '../types/UserDetail';
 import { GameDocument } from '../model/game.model';
 import { ACTION } from '../constants';
 import { PlayerDetail } from '../types';
-import { GameSchema } from '../schema/gameSchema';
+import { Game } from '../schema/gameSchema';
 
 export interface JoinGameDBReply {
   action: ACTION;
-  game: GameSchema;
+  game: Game;
 }
 
 export interface JoinGameResponse {
-  game: GameSchema;
+  game: Game;
   // playerDetail: PlayerDetail;
 }
 
