@@ -3,14 +3,31 @@ import {
   OpenAPIRegistry,
   OpenApiGeneratorV31,
 } from '@asteasolutions/zod-to-openapi';
-import { readUpdateDeleteGameParams } from '../schema/updateGameSchemas';
-import z from 'zod';
+import { readUpdateDeleteGameParams } from '../schema/updateGameSchemas_new';
+// import z from 'zod';
+import { z } from '../zod-config';
 import { createGamePayload } from '../schema/createGameSchemas';
+import { updateGamePayloadGeneral } from '../schema/updateGameSchemas_new';
+import {
+  updateGameResponseSchema,
+  updateGameDBReplySchema,
+} from '../schema/updateGameResponseSchema';
+import { updateGameDbReplySchema } from '../schema/updateGameDBResponseSchema';
+// import {
+//   joinGameResponseSchema,
+//   leaveGameResponseSchema,
+// } from '../schema/joinLeaveGameReplySchemas';
+// import { moveResponseSchema } from '../schema/moveReplySchemas';
+// import { resetGameResponseSchema } from '../schema/resetGameReply';
 import {
   objectIdStringSchema,
   objectIdSchema,
   objectId,
 } from '../schema/objectIdStringSchema';
+// import { objectIdStringSchema, objectIdSchema, objectId } from '../schema';
+import { joinGameDbReplySchema } from '../schema/joinLeaveGameReplySchemas';
+import { moveDbReplySchema } from '../schema/moveReplySchemas';
+import { resetGameDbReplySchema } from '../schema/resetGameReply';
 
 import * as fs from 'fs';
 import { serverErrorSchema } from '../schema/serverErrorSchema';
@@ -35,10 +52,21 @@ if (process.env.allowHost === undefined) {
 
   const IdSchema = registry.register(
     'ObjectIdStringSchema',
-    objectIdStringSchema
+    objectIdStringSchema('Game Id | User Id | Position Id')
   );
 
   registry.register('ObjectIdSchema', objectId);
+
+  const gameId = registry.registerParameter(
+    'GameId',
+    objectIdStringSchema('Game Id').openapi({
+      param: {
+        name: 'id',
+        in: 'path',
+      },
+      example: '656789abcdef1234567890ab',
+    })
+  );
 
   const GameSchema = registry.register('GameSchema', gameSchema);
 
@@ -55,6 +83,47 @@ if (process.env.allowHost === undefined) {
   const ServerErrorSchema = registry.register(
     'ServerErrorSchema',
     serverErrorSchema
+  );
+
+  // const updateGameDBResponseSchema = z.discriminatedUnion('action', [
+  // const updateGameResponseSchema = z.union([
+  //   joinGameResponseSchema,
+  //   moveResponseSchema,
+  //   leaveGameResponseSchema,
+  //   resetGameResponseSchema,
+  // ]);
+
+  // registry.register('JoinGameResponse', joinGameResponseSchema);
+  // registry.register('LeaveGameResponse', leaveGameResponseSchema);
+  // registry.register('MoveResponse', moveResponseSchema);
+  // registry.register('ResetGameResponse', resetGameResponseSchema);
+
+  const joinGameDbReply = registry.register(
+    'JoinGameDbReply',
+    joinGameDbReplySchema.describe('JOINING game DB reply to server')
+  );
+  const moveDbReply = registry.register(
+    'MoveDbReply',
+    moveDbReplySchema.describe('MOVE DB reply to server')
+  );
+  const resetGameDbReply = registry.register(
+    'ResetGameDbReply',
+    resetGameDbReplySchema.describe('RESET game DB reply to server')
+  );
+
+  const UpdateGameResponse = registry.register(
+    'UpdateGameResponse',
+    updateGameResponseSchema.describe(
+      'Update game >> server response to client'
+    )
+    // updateGameResponseSchema.openapi({
+    //   description: 'Update game: server response to client',
+    // })
+  );
+
+  const UpdateGameDbReply = registry.register(
+    'UpdateGameDbReply',
+    updateGameDBReplySchema
   );
 
   registry.registerPath({
@@ -173,7 +242,7 @@ if (process.env.allowHost === undefined) {
     description: 'Retrieve an incompleted game',
     request: {
       params: z.object({
-        id: objectIdSchema('The Game id number'),
+        id: gameId,
       }),
     },
     responses: {
@@ -224,6 +293,50 @@ if (process.env.allowHost === undefined) {
       },
       500: {
         description: 'Server error',
+        content: {
+          'application/json': {
+            schema: ServerErrorSchema,
+          },
+        },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'put',
+    tags: ['game'],
+    path: '/game/{id}',
+    summary: 'Update game',
+    description: 'Update a game',
+    request: {
+      params: z.object({ id: gameId }),
+      body: {
+        content: {
+          'application/json': {
+            schema: updateGamePayloadGeneral.body,
+            // schema: updateGamePayloadGeneral,
+          },
+        },
+        required: true,
+      },
+    },
+    responses: {
+      200: {
+        description: 'Custom Game update response object',
+        content: {
+          'application/json': {
+            schema: UpdateGameResponse,
+          },
+        },
+      },
+      204: {
+        description: 'REST|LEAVE|MSG responses have empty body',
+      },
+      404: {
+        description: 'Game not found in database',
+      },
+      500: {
+        description: 'Update failed',
         content: {
           'application/json': {
             schema: ServerErrorSchema,

@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodObject, ZodRecord } from 'zod';
+import { ZodRecord } from 'zod';
 import { UpdateGameSchemas } from '../schema/updateGameSchemas';
 
-const validate =
+export const validateUpdateGameBodyPayload =
   (schema: ZodRecord) => (req: Request, res: Response, next: NextFunction) => {
     try {
       schema.parse({
@@ -20,4 +20,4 @@ const validate =
     }
   };
 
-export default validate;
+// export default validate;

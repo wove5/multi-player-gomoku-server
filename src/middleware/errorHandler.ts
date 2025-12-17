@@ -2,14 +2,14 @@ import { ServerError } from './../schema/serverErrorSchema';
 //TODO: flesh this global error handler out
 import { NextFunction, Request, Response } from 'express';
 
-interface TypedResponse<T> extends Response<T> {
-  locals: { asyncData: T };
+interface TypedResponse<T, U> extends Response<T> {
+  locals: { asyncData: T; processedData: U };
 }
 
 export const errorHandler = (
   err: Error,
   req: Request,
-  res: TypedResponse<ServerError>,
+  res: TypedResponse<ServerError, null>,
   next: NextFunction
 ) => {
   console.log('Error', err.message);

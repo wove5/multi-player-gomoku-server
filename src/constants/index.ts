@@ -20,10 +20,12 @@ export enum ACTION {
   REENTER = 'REENTER',
   RETRIEVE = 'RETRIEVE',
   LEAVE = 'LEAVE',
+  DELETE = 'DELETE',
   MOVE = 'MOVE',
   REST = 'REST',
   RESET = 'RESET',
-  MSG = 'MSG'
+  MSG = 'MSG',
+  DEFAULT = 'DEFAULT',
 }
 
 export enum PLAYER_STATE {

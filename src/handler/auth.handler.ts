@@ -1,7 +1,6 @@
 import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import validateSchema from '../middleware/validateSchema';
-import validateAuthBodyPayload from '../middleware/validateAuthBodyPayload';
+import { validateAuthBodyPayload } from '../middleware/validateAuthBodyPayload';
 import { createUser, getUserByUsername } from '../service/auth.service';
 import {
   LoginInput,
@@ -13,6 +12,10 @@ import {
 import { signJwt } from '../util/jwt';
 import { AuthResponse } from '../types';
 
+interface TypedResponse<T, U> extends Response {
+  locals: { asyncData: T; processedData: U };
+}
+
 const authHandler = express.Router();
 
 authHandler.post(
@@ -21,7 +24,7 @@ authHandler.post(
   // validateSchema(registerSchema),
   async (
     req: Request<{}, AuthResponse, RegisterInput['body']>,
-    res: TypedResponse<AuthResponse>
+    res: TypedResponse<AuthResponse, null>
   ) => {
     try {
       const { username, password } = req.body;
@@ -41,7 +44,7 @@ authHandler.post(
 
       // Create user in our database
       const newUser = await createUser({
-        userName: username,
+        username: username,
         password: encryptedPassword,
       });
 
@@ -62,7 +65,7 @@ authHandler.post(
   // validateSchema(loginSchema),
   async (
     req: Request<{}, AuthResponse, LoginInput['body']>,
-    res: TypedResponse<AuthResponse>
+    res: TypedResponse<AuthResponse, null>
   ) => {
     try {
       // Get user input

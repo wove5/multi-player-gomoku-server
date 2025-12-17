@@ -23,6 +23,7 @@ declare global {
     // the following works
     interface Locals {
       asyncData: any;
+      processedData: any;
     }
   }
 }

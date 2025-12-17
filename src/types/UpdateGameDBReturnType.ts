@@ -1,3 +1,4 @@
+// import z, { discriminatedUnion } from 'zod';
 import {
   JoinGameDBReply,
   MoveDBReply,
@@ -8,6 +9,7 @@ import {
   TakeRestFromGameDBReply,
   MsgDBReply,
 } from '../interfaces';
+import { discriminatedUnion } from 'zod';
 
 export type UpdateGameDBReturnType =
   | JoinGameDBReply
@@ -18,3 +20,7 @@ export type UpdateGameDBReturnType =
   | ResetGameDBReply
   | MsgDBReply
   | NoDBReply;
+
+// export type UpdateGameDBReturnSchema = z.ZodDiscriminatedUnion('action', [
+//   z.object(typeof JoinGameDBReply)
+// ])

@@ -1,0 +1,4 @@
+/* swagger-custom.css */
+.swagger-ui .responses-table td {
+  padding: 15px 0 !important;
+}

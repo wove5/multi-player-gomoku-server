@@ -1,8 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodObject } from 'zod';
+import logger from '../util/logger';
 
-const validate =
+export const validateSchema =
   (schema: ZodObject) => (req: Request, res: Response, next: NextFunction) => {
+    console.log(`req.body = ${req.body}`);
+    logger.info(`⚡️[server]: req.body = ${req.body}`);
+    console.table(req.body);
     try {
       schema.parse({
         body: req.body,
@@ -18,4 +22,4 @@ const validate =
     }
   };
 
-export default validate;
+// export default validate;

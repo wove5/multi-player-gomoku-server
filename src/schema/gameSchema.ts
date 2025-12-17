@@ -1,28 +1,16 @@
-import { objectIdSchema, objectIdStringSchema } from './objectIdStringSchema';
-import z from 'zod';
-import { POSITION_STATUS, GAMESTATUS } from '../constants';
-
-export const positionStatusSchema = z.enum(POSITION_STATUS);
-
-export const gamestatusSchema = z.enum(GAMESTATUS);
-
-// TODO: develop new dedicated schema for User with all fields as like GameSchema
-// TODO: then use Pick and Omit zod utilities to keep _id & userName here
-const userDocumentSchema = z.object({
-  _id: objectIdSchema('Player Id'),
-  userName: z.string().openapi({ description: `Player's username` }),
-});
-
-const messageSchema = z.object({
-  message: z.string(),
-  userId: objectIdStringSchema,
-  userName: z.string(),
-});
-
-const playerDetailSchema = z.object({
-  user: z.union([objectIdSchema('Player Id'), userDocumentSchema]),
-  color: positionStatusSchema,
-});
+import { z } from '../zod-config';
+// import {
+//   objectIdSchema,
+//   playerDetailSchema,
+//   positionStatusSchema,
+//   messageSchema,
+//   gamestatusSchema,
+// } from '.';
+import { objectIdSchema } from './objectIdStringSchema';
+import { playerDetailSchema } from './userAndPlayerSchemas';
+import { positionStatusSchema } from './constantEnumSchemas';
+import { messageSchema } from './msgReply';
+import { gamestatusSchema } from './constantEnumSchemas';
 
 export const gameSchema = z.object({
   _id: objectIdSchema('Game Id'),

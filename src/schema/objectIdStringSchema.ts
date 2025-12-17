@@ -1,9 +1,35 @@
-import z from 'zod';
+import { z } from '../zod-config';
 import mongoose, { Types } from 'mongoose';
-import exp from 'constants';
 
-export const objectIdStringSchema = z
-  // export const objectIdSchema = z
+export const objectIdStringSchema = (extraDescription: string = '') => {
+  return (
+    z
+      // export const objectIdStringSchema = z
+      .string()
+      .regex(/^[0-9A-Fa-f]+$/, 'Invalid hexadecimal string')
+      .length(24)
+      .refine(
+        (val) => {
+          return (
+            mongoose.isObjectIdOrHexString(val) &&
+            new mongoose.Types.ObjectId(val).toString() === val
+          );
+        },
+        {
+          message: 'Invalid MongoDB ObjectId string',
+        }
+      )
+      // .openapi({ description: 'MongoDB ObjectId as a string' });
+      .openapi({
+        // type: 'string',
+        description:
+          (extraDescription ? `${extraDescription}:\n\n` : '') +
+          'MongoDB ObjectId as a string',
+      })
+  );
+};
+
+export const objectIdStringSchemaTemp = z
   .string()
   .regex(/^[0-9A-Fa-f]+$/, 'Invalid hexadecimal string')
   .length(24)
@@ -34,6 +60,10 @@ export const objectIdStringSchema = z
 //     description: 'mongodb ObjectId = hexidecimal string of length 24 chars',
 //   });
 
+// export function objectIdSchema(
+//   extraDescription: string = ''
+// ): z.ZodCustom<Types.ObjectId, Types.ObjectId> {
+
 export const objectIdSchema = (extraDescription: string = '') => {
   return z
     .custom<Types.ObjectId>()
@@ -54,9 +84,9 @@ export const objectIdSchema = (extraDescription: string = '') => {
       type: 'string',
       description:
         (extraDescription ? `${extraDescription}:\n\n` : '') +
-        'mongodb ObjectId = 24 character hexidecimal string',
+        'mongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)',
     });
 };
 
-export const objectId = objectIdSchema('Game Id | Player Id | Position Id');
+export const objectId = objectIdSchema('Game Id | User Id | Position Id');
 // export type ObjectIdSchema = z.infer<typeof objectIdSchema>;

@@ -1,11 +1,9 @@
-import { z } from 'zod';
-import { POSITION_STATUS, GAMESTATUS } from '../constants';
-
+import { z } from '../zod-config';
+// import { objectIdSchema, positionStatusSchema, gamestatusSchema } from '.';
 import { objectIdSchema } from './objectIdStringSchema';
-
-export const positionStatusSchema = z.enum(POSITION_STATUS);
-
-export const gamestatusSchema = z.enum(GAMESTATUS);
+import { positionStatusSchema, gamestatusSchema } from './constantEnumSchemas';
+// import { positionStatusSchema, gamestatusSchema } from '.';
+// import { objectIdSchema } from './objectIdStringSchema';
 
 const completedGameDataSchema = z.object({
   _id: objectIdSchema('Game Id'),

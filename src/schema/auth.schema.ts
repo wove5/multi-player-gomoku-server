@@ -1,15 +1,18 @@
-import z, { object, string, record } from "zod";
+// import { object, string, record } from 'zod';
+import { z } from '../zod-config';
 
-export const assertAuthPayloadShape = 
-  record(z.enum(['username', 'password']), z.string().min(1,'Cannot be empty string'))
+export const assertAuthPayloadShape = z.record(
+  z.enum(['username', 'password']),
+  z.string().min(1, 'Cannot be empty string')
+);
 // Interesting. This covers all the validation items commented out below. It also covers
-// invalid types - e.g. as in the long refine statement for assertUpdateGamePayloadShape 
+// invalid types - e.g. as in the long refine statement for assertUpdateGamePayloadShape
 
 const payload = {
-  body: object({
-      username: string(),
-      password: string()
-    })  
+  body: z.object({
+    username: z.string(),
+    password: z.string(),
+  }),
   // body: object({
   //   username: string({
   //     error: (issue) => issue.input === undefined
@@ -26,13 +29,13 @@ const payload = {
   //   })
 };
 
-export const registerSchema = object({
-  ...payload
-})
+export const registerSchema = z.object({
+  ...payload,
+});
 
-export const loginSchema = object({
-  ...payload
-})
+export const loginSchema = z.object({
+  ...payload,
+});
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
