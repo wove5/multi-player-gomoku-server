@@ -246,7 +246,8 @@ gameHandler.get(
           JSON.stringify({
             updatedBy: req.userId,
             // action: res.locals.asyncData.action,
-            action: ACTION.RETRIEVE,
+            // action: ACTION.RETRIEVE,
+            action: ACTION.REENTER,
             // notify opponent I have joined or re-entered, by sending my details (name)
             players: res.locals.processedData.players,
           })
@@ -489,23 +490,26 @@ function isTakeRestGameDBReply(
 ) {
   if (res.locals.asyncData.action === ACTION.REST) {
     res.locals.processedData = res.locals.asyncData.result;
-    [...wss.clients]
-      .filter(
-        (client) =>
-          client.gameId === req.params.id &&
-          client.userId !== req.userId &&
-          client.readyState === WebSocket.OPEN
-      )
-      .forEach((client) => {
-        client.send(
-          JSON.stringify({
-            updatedBy: req.userId,
-            // action: res.locals.asyncData.action,
-            action: ACTION.REST,
-            players: res.locals.asyncData.result,
-          })
-        );
-      });
+    if (res.locals.processedData)
+      // when player clicks LEAVE the App follows up
+      [...wss.clients] // with REST by design and result is null, so
+        .filter(
+          // so need to guard against that with conditional.
+          (client) =>
+            client.gameId === req.params.id &&
+            client.userId !== req.userId &&
+            client.readyState === WebSocket.OPEN
+        )
+        .forEach((client) => {
+          client.send(
+            JSON.stringify({
+              updatedBy: req.userId,
+              // action: res.locals.asyncData.action,
+              action: ACTION.REST,
+              players: res.locals.asyncData.result,
+            })
+          );
+        });
     return res.status(204).send();
     // try something different by aligning more to the generic type of res
   }
