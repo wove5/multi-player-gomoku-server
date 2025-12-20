@@ -1,23 +1,6 @@
 import mongoose from 'mongoose';
-import { PlayerDetail } from '../types';
-import { Message } from '../types/Message';
-
-enum POSITION_STATUS {
-  BLACK = 'BLACK',
-  WHITE = 'WHITE',
-  NONE = 'NONE',
-}
-
-enum SELPOS_STATUS {
-  BLACK = 'BLACK',
-  WHITE = 'WHITE',
-}
-
-enum GAMESTATUS {
-  ACTIVE = 'ACTIVE',
-  WON = 'WON',
-  DRAWN = 'DRAWN',
-}
+import { PlayerDetail, Message } from '../types';
+import { POSITION_STATUS, GAMESTATUS } from '../constants';
 
 // export interface CompleteGameDocument extends Document {  // mongoose docs recommend not extending Document
 export interface GameDocument {
@@ -28,6 +11,7 @@ export interface GameDocument {
   size: number[];
   status: GAMESTATUS;
   positions: Array<{
+    _id: mongoose.Types.ObjectId;
     status: POSITION_STATUS;
   }>;
   selectedPositions: number[];
@@ -60,8 +44,8 @@ const gameSchema = new mongoose.Schema(
         message: String,
         userId: String,
         userName: String,
-      }
-    ]
+      },
+    ],
   },
   { timestamps: true }
 );

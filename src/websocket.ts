@@ -1,6 +1,7 @@
 import type { IncomingMessage, Server } from 'http';
 import { GameConnections } from './types';
 import WebSocket, { WebSocketServer } from 'ws';
+import dotenv from 'dotenv';
 import { URL } from 'node:url';
 import logger from './util/logger';
 import type NanoidLib from 'nanoid'; // this makes it possible to have a require statement; see next line
@@ -15,6 +16,9 @@ interface TokenBody {
   iat: number;
   exp: number;
 }
+
+dotenv.config();
+const port = process.env.PORT;
 
 // export let wss: WebSocket.Server;
 export let wss: CustomWebSocketServer;
@@ -85,7 +89,9 @@ export const startWebSocketServer = (
       return;
     }
     // screen the ws connection request to only allow client if they belong in game with gameId
-    const theURL = req.url ? new URL(`wss://localhost:8080${req.url}`) : null;
+    const theURL = req.url
+      ? new URL(`wss://localhost:${port}${req.url}`)
+      : null;
     if (theURL) {
       const params = theURL.searchParams;
       const gameId = params.get('gameId');
@@ -94,7 +100,7 @@ export const startWebSocketServer = (
         const completedGames = await getCompletedGames(decoded._id);
         // Confirm that client with valid token decoded._id belongs in game with gameId
         const completedGame = completedGames // currently redundant because no websocket is opened
-          .map((g) => g._id.toString())      // for completed games, however it is likely in future
+          .map((g) => g._id.toString()) // for completed games, however it is likely in future
           .find((gId) => gId === gameId);
         const incompleteGame = incompleteGames
           .map((g) => g._id.toString())

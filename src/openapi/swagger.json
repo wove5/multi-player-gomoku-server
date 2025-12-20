@@ -1,0 +1,1674 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Gomoku Game API",
+    "description": "Open API documentation for Gomoku Game"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8081/api/api-docs"
+    }
+  ],
+  "tags": [
+    {
+      "name": "game",
+      "description": "All operations concerning a game"
+    },
+    {
+      "name": "games",
+      "description": "Operations retrieving details of multiple games"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "ObjectIdStringSchema": {
+        "type": "string",
+        "minLength": 24,
+        "maxLength": 24,
+        "pattern": "^[0-9A-Fa-f]+$",
+        "description": "Game Id | User Id | Position Id:\n\nMongoDB ObjectId as a string"
+      },
+      "ObjectIdSchema": {
+        "type": "string",
+        "description": "Game Id | User Id | Position Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+      },
+      "GameSchema": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "description": "Game Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "user": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "_id": {
+                          "type": "string",
+                          "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                        },
+                        "userName": {
+                          "type": "string",
+                          "description": "Player's username"
+                        }
+                      },
+                      "required": [
+                        "_id",
+                        "userName"
+                      ]
+                    }
+                  ]
+                },
+                "color": {
+                  "type": "string",
+                  "enum": [
+                    "BLACK",
+                    "WHITE",
+                    "NONE"
+                  ]
+                }
+              },
+              "required": [
+                "user",
+                "color"
+              ]
+            }
+          },
+          "gameNumber": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "isMulti": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 12
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Dimensions of the game board grid:\n\n must be numbers in the range 5..12"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "WON",
+              "DRAWN"
+            ]
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "_id": {
+                  "type": "string",
+                  "description": "Game board Position Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "BLACK",
+                    "WHITE",
+                    "NONE"
+                  ]
+                }
+              },
+              "required": [
+                "_id",
+                "status"
+              ]
+            }
+          },
+          "selectedPositions": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "userId": {
+                  "type": "string",
+                  "minLength": 24,
+                  "maxLength": 24,
+                  "pattern": "^[0-9A-Fa-f]+$",
+                  "description": "User Id:\n\nMongoDB ObjectId as a string"
+                },
+                "userName": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message",
+                "userId",
+                "userName"
+              ]
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "_id",
+          "players",
+          "gameNumber",
+          "isMulti",
+          "size",
+          "status",
+          "positions",
+          "selectedPositions",
+          "messages",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "IncompleteGamesArraySchema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "_id": {
+              "type": "string",
+              "description": "Game Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+            },
+            "gameNumber": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "size": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 12
+              },
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "Dimensions of the game board grid:\n\n must be numbers in the range 5..12"
+            },
+            "isMulti": {
+              "type": "boolean"
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date"
+            },
+            "players": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "user": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string",
+                            "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                          },
+                          "userName": {
+                            "type": "string",
+                            "description": "Player's username"
+                          }
+                        },
+                        "required": [
+                          "_id",
+                          "userName"
+                        ]
+                      }
+                    ]
+                  },
+                  "color": {
+                    "type": "string",
+                    "enum": [
+                      "BLACK",
+                      "WHITE",
+                      "NONE"
+                    ]
+                  }
+                },
+                "required": [
+                  "user",
+                  "color"
+                ]
+              }
+            }
+          },
+          "required": [
+            "_id",
+            "gameNumber",
+            "size",
+            "isMulti",
+            "createdAt",
+            "players"
+          ]
+        }
+      },
+      "CompletedGamesArraySchema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "_id": {
+              "type": "string",
+              "description": "Game Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+            },
+            "gameNumber": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "size": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 12
+              },
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "Dimensions of the game board grid:\n\n must be numbers in the range 5..12"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "WON",
+                "DRAWN"
+              ]
+            },
+            "lastSelectedPosition": {
+              "type": "object",
+              "properties": {
+                "_id": {
+                  "type": "string",
+                  "description": "Position Id of last selected board position:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "BLACK",
+                    "WHITE",
+                    "NONE"
+                  ]
+                }
+              },
+              "required": [
+                "_id",
+                "status"
+              ]
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date"
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "required": [
+            "_id",
+            "gameNumber",
+            "size",
+            "status",
+            "lastSelectedPosition",
+            "createdAt",
+            "updatedAt"
+          ]
+        }
+      },
+      "ServerErrorSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "JoinGameDbReply": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "JOIN"
+            ]
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "description": "Game Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+              },
+              "players": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "_id": {
+                              "type": "string",
+                              "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                            },
+                            "userName": {
+                              "type": "string",
+                              "description": "Player's username"
+                            }
+                          },
+                          "required": [
+                            "_id",
+                            "userName"
+                          ]
+                        }
+                      ]
+                    },
+                    "color": {
+                      "type": "string",
+                      "enum": [
+                        "BLACK",
+                        "WHITE",
+                        "NONE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "user",
+                    "color"
+                  ]
+                }
+              },
+              "gameNumber": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "isMulti": {
+                "type": "boolean"
+              },
+              "size": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 5,
+                  "maximum": 12
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "Dimensions of the game board grid:\n\n must be numbers in the range 5..12"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "WON",
+                  "DRAWN"
+                ]
+              },
+              "positions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "_id": {
+                      "type": "string",
+                      "description": "Game board Position Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "BLACK",
+                        "WHITE",
+                        "NONE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "_id",
+                    "status"
+                  ]
+                }
+              },
+              "selectedPositions": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "messages": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "minLength": 24,
+                      "maxLength": 24,
+                      "pattern": "^[0-9A-Fa-f]+$",
+                      "description": "User Id:\n\nMongoDB ObjectId as a string"
+                    },
+                    "userName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "userId",
+                    "userName"
+                  ]
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "required": [
+              "_id",
+              "players",
+              "gameNumber",
+              "isMulti",
+              "size",
+              "status",
+              "positions",
+              "selectedPositions",
+              "messages",
+              "createdAt",
+              "updatedAt"
+            ],
+            "description": "The Game object"
+          }
+        },
+        "required": [
+          "action",
+          "result"
+        ],
+        "description": "JOINING game DB reply to server"
+      },
+      "MoveDbReply": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "MOVE"
+            ]
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "WON",
+                  "DRAWN"
+                ]
+              },
+              "player": {
+                "type": "string",
+                "enum": [
+                  "BLACK",
+                  "WHITE"
+                ]
+              },
+              "selectedPosId": {
+                "type": "string"
+              },
+              "selectedPosIndex": {
+                "type": "number"
+              },
+              "players": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "_id": {
+                              "type": "string",
+                              "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                            },
+                            "userName": {
+                              "type": "string",
+                              "description": "Player's username"
+                            }
+                          },
+                          "required": [
+                            "_id",
+                            "userName"
+                          ]
+                        }
+                      ]
+                    },
+                    "color": {
+                      "type": "string",
+                      "enum": [
+                        "BLACK",
+                        "WHITE",
+                        "NONE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "user",
+                    "color"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "status",
+              "player"
+            ],
+            "description": "The Game details returned after move is made"
+          }
+        },
+        "required": [
+          "action",
+          "result"
+        ],
+        "description": "MOVE DB reply to server"
+      },
+      "ResetGameDbReply": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "RESET"
+            ]
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "description": "Game Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+              },
+              "players": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "_id": {
+                              "type": "string",
+                              "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                            },
+                            "userName": {
+                              "type": "string",
+                              "description": "Player's username"
+                            }
+                          },
+                          "required": [
+                            "_id",
+                            "userName"
+                          ]
+                        }
+                      ]
+                    },
+                    "color": {
+                      "type": "string",
+                      "enum": [
+                        "BLACK",
+                        "WHITE",
+                        "NONE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "user",
+                    "color"
+                  ]
+                }
+              },
+              "gameNumber": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "isMulti": {
+                "type": "boolean"
+              },
+              "size": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 5,
+                  "maximum": 12
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "Dimensions of the game board grid:\n\n must be numbers in the range 5..12"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "WON",
+                  "DRAWN"
+                ]
+              },
+              "positions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "_id": {
+                      "type": "string",
+                      "description": "Game board Position Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "BLACK",
+                        "WHITE",
+                        "NONE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "_id",
+                    "status"
+                  ]
+                }
+              },
+              "selectedPositions": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "messages": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "minLength": 24,
+                      "maxLength": 24,
+                      "pattern": "^[0-9A-Fa-f]+$",
+                      "description": "User Id:\n\nMongoDB ObjectId as a string"
+                    },
+                    "userName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "userId",
+                    "userName"
+                  ]
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "required": [
+              "_id",
+              "players",
+              "gameNumber",
+              "isMulti",
+              "size",
+              "status",
+              "positions",
+              "selectedPositions",
+              "messages",
+              "createdAt",
+              "updatedAt"
+            ],
+            "description": "The Game object reset as a blank board"
+          }
+        },
+        "required": [
+          "action",
+          "result"
+        ],
+        "description": "RESET game DB reply to server"
+      },
+      "JoinGameResponse": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "description": "Game Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+              },
+              "players": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "_id": {
+                              "type": "string",
+                              "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                            },
+                            "userName": {
+                              "type": "string",
+                              "description": "Player's username"
+                            }
+                          },
+                          "required": [
+                            "_id",
+                            "userName"
+                          ]
+                        }
+                      ]
+                    },
+                    "color": {
+                      "type": "string",
+                      "enum": [
+                        "BLACK",
+                        "WHITE",
+                        "NONE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "user",
+                    "color"
+                  ]
+                }
+              },
+              "gameNumber": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "isMulti": {
+                "type": "boolean"
+              },
+              "size": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 5,
+                  "maximum": 12
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "Dimensions of the game board grid:\n\n must be numbers in the range 5..12"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "WON",
+                  "DRAWN"
+                ]
+              },
+              "positions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "_id": {
+                      "type": "string",
+                      "description": "Game board Position Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "BLACK",
+                        "WHITE",
+                        "NONE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "_id",
+                    "status"
+                  ]
+                }
+              },
+              "selectedPositions": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "messages": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "minLength": 24,
+                      "maxLength": 24,
+                      "pattern": "^[0-9A-Fa-f]+$",
+                      "description": "User Id:\n\nMongoDB ObjectId as a string"
+                    },
+                    "userName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "userId",
+                    "userName"
+                  ]
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "required": [
+              "_id",
+              "players",
+              "gameNumber",
+              "isMulti",
+              "size",
+              "status",
+              "positions",
+              "selectedPositions",
+              "messages",
+              "createdAt",
+              "updatedAt"
+            ],
+            "description": "The Game object"
+          }
+        },
+        "required": [
+          "game"
+        ],
+        "description": "JOIN game server response to client: Existing Game object"
+      },
+      "MoveResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "WON",
+              "DRAWN"
+            ]
+          },
+          "player": {
+            "type": "string",
+            "enum": [
+              "BLACK",
+              "WHITE"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "player"
+        ],
+        "description": "MOVE response: The latest game status and player who has next turn"
+      },
+      "ResetGameResponse": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "description": "Game Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+              },
+              "players": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "_id": {
+                              "type": "string",
+                              "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                            },
+                            "userName": {
+                              "type": "string",
+                              "description": "Player's username"
+                            }
+                          },
+                          "required": [
+                            "_id",
+                            "userName"
+                          ]
+                        }
+                      ]
+                    },
+                    "color": {
+                      "type": "string",
+                      "enum": [
+                        "BLACK",
+                        "WHITE",
+                        "NONE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "user",
+                    "color"
+                  ]
+                }
+              },
+              "gameNumber": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "isMulti": {
+                "type": "boolean"
+              },
+              "size": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 5,
+                  "maximum": 12
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "Dimensions of the game board grid:\n\n must be numbers in the range 5..12"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "WON",
+                  "DRAWN"
+                ]
+              },
+              "positions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "_id": {
+                      "type": "string",
+                      "description": "Game board Position Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "BLACK",
+                        "WHITE",
+                        "NONE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "_id",
+                    "status"
+                  ]
+                }
+              },
+              "selectedPositions": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "messages": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "minLength": 24,
+                      "maxLength": 24,
+                      "pattern": "^[0-9A-Fa-f]+$",
+                      "description": "User Id:\n\nMongoDB ObjectId as a string"
+                    },
+                    "userName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "userId",
+                    "userName"
+                  ]
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "required": [
+              "_id",
+              "players",
+              "gameNumber",
+              "isMulti",
+              "size",
+              "status",
+              "positions",
+              "selectedPositions",
+              "messages",
+              "createdAt",
+              "updatedAt"
+            ]
+          }
+        },
+        "required": [
+          "game"
+        ],
+        "description": "RESET Game response: A new blank Game object"
+      },
+      "UpdateGameResponse": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/JoinGameResponse"
+          },
+          {
+            "$ref": "#/components/schemas/MoveResponse"
+          },
+          {
+            "$ref": "#/components/schemas/ResetGameResponse"
+          }
+        ],
+        "description": "Update game >> server response to client"
+      },
+      "UpdateGameDbReply": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/JoinGameDbReply"
+              },
+              {
+                "description": "JOIN game DB reply to server"
+              }
+            ]
+          },
+          {
+            "$ref": "#/components/schemas/MoveDbReply"
+          },
+          {
+            "$ref": "#/components/schemas/ResetGameDbReply"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "action",
+          "mapping": {
+            "JOIN": "#/components/schemas/JoinGameDbReply",
+            "MOVE": "#/components/schemas/MoveDbReply",
+            "RESET": "#/components/schemas/ResetGameDbReply"
+          }
+        },
+        "description": "Update Game >> DB reply to server"
+      },
+      "GameId": {
+        "type": "string",
+        "minLength": 24,
+        "maxLength": 24,
+        "pattern": "^[0-9A-Fa-f]+$",
+        "description": "Game Id:\n\nMongoDB ObjectId as a string",
+        "example": "656789abcdef1234567890ab"
+      },
+      "MoveRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "MOVE"
+            ]
+          },
+          "input": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "required": [
+          "action",
+          "input"
+        ],
+        "description": "MOVE client request to server"
+      },
+      "MessageRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "MSG"
+            ]
+          },
+          "input": {
+            "type": "object",
+            "properties": {
+              "msg": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "userId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "userName": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "message",
+                  "userId",
+                  "userName"
+                ]
+              }
+            },
+            "required": [
+              "msg"
+            ]
+          }
+        },
+        "required": [
+          "action",
+          "input"
+        ],
+        "description": "MSG client request to server"
+      },
+      "ResetRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "RESET"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "description": "RESET game client request to server"
+      },
+      "JoinGameRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "JOIN"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "description": "JOIN game client request to server"
+      },
+      "LeaveGameRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "LEAVE"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "description": "LEAVE game client request to server"
+      },
+      "RestRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "REST"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "description": "REST from game client request to server"
+      },
+      "UpdateGameRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MoveRequest"
+          },
+          {
+            "$ref": "#/components/schemas/MessageRequest"
+          },
+          {
+            "$ref": "#/components/schemas/ResetRequest"
+          },
+          {
+            "$ref": "#/components/schemas/JoinGameRequest"
+          },
+          {
+            "$ref": "#/components/schemas/LeaveGameRequest"
+          },
+          {
+            "$ref": "#/components/schemas/RestRequest"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "action",
+          "mapping": {
+            "MOVE": "#/components/schemas/MoveRequest",
+            "MSG": "#/components/schemas/MessageRequest",
+            "RESET": "#/components/schemas/ResetRequest",
+            "JOIN": "#/components/schemas/JoinGameRequest",
+            "LEAVE": "#/components/schemas/LeaveGameRequest",
+            "REST": "#/components/schemas/RestRequest"
+          }
+        },
+        "description": "Update game >> client request to server"
+      }
+    },
+    "parameters": {
+      "GameId": {
+        "schema": {
+          "$ref": "#/components/schemas/GameId"
+        },
+        "required": true,
+        "description": "Game Id:\n\nMongoDB ObjectId as a string",
+        "name": "id",
+        "in": "path"
+      }
+    }
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Retrieve incomplete Games",
+        "description": "Retrieve all incomplete games",
+        "responses": {
+          "200": {
+            "description": "Retrieved incomplete games",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncompleteGamesArraySchema"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorSchema"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "game"
+        ],
+        "summary": "Create new Game",
+        "description": "Create a new game",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "size": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": 5,
+                      "maximum": 12
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "Dimensions of game grid: must be numbers in the range 5..12"
+                  },
+                  "isMulti": {
+                    "type": "boolean",
+                    "description": "Boolean flag indicates if game is multi-player or not"
+                  }
+                },
+                "required": [
+                  "size",
+                  "isMulti"
+                ]
+              },
+              "examples": {
+                "eg1": {
+                  "value": {
+                    "size": "[5, 5]",
+                    "isMulti": false
+                  }
+                },
+                "eg2": {
+                  "value": {
+                    "size": "[10, 10]",
+                    "isMulti": true
+                  }
+                },
+                "eg3": {
+                  "value": {
+                    "size": "[7, 7]",
+                    "isMulti": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Game created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameSchema"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Retrieve completed Games",
+        "description": "Retrieve all completed games",
+        "responses": {
+          "200": {
+            "description": "Retrieved completed games",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletedGamesArraySchema"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/game/{id}": {
+      "get": {
+        "tags": [
+          "game"
+        ],
+        "summary": "Retrieve incomplete Game",
+        "description": "Retrieve an incompleted game",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/GameId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game Object/document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameSchema"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Game not found in database"
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorSchema"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "game"
+        ],
+        "summary": "Update game",
+        "description": "Update a game",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/GameId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Custom Game update response object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateGameResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "REST|LEAVE|MSG responses have empty body"
+          },
+          "404": {
+            "description": "Game not found in database"
+          },
+          "500": {
+            "description": "Update failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/game-log/{id}": {
+      "get": {
+        "tags": [
+          "game"
+        ],
+        "summary": "Retrieve completed Game",
+        "description": "Retrieve a completed game",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The Game Id number:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+            },
+            "required": true,
+            "description": "The Game Id number:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game Object/document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameSchema"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Game not found in database"
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 export interface UserDocument {
+  _id: mongoose.Types.ObjectId;
   userName: string;
   password: string;
   createdAt?: Date;

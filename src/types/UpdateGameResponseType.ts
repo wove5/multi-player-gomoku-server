@@ -9,4 +9,5 @@ export type UpdateGameResponseType =
   | JoinGameResponse
   | MoveResponse
   | LeaveGameResponse
-  | MsgResponse;
+  | MsgResponse
+  | {};
