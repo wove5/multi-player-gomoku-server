@@ -13,6 +13,12 @@ const userDocumentSchema = z.object({
   updatedAt: z.date().optional(),
 });
 
+const userInputSchema = userDocumentSchema.pick({
+  userName: true,
+  password: true,
+});
+export type CreateUserInput = z.infer<typeof userInputSchema>;
+
 export const playerDetailSchema = z.object({
   user: z.union([
     objectIdSchema('User Id'),
