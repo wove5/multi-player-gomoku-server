@@ -18,7 +18,6 @@ import { errorHandler } from './middleware/errorHandler';
 import fs from 'fs';
 // import path from 'path';
 import path from 'path';
-import exp from 'constants';
 
 dotenv.config();
 console.log(`process.env.allowHost = ${process.env.allowHost}`);
@@ -48,6 +47,20 @@ app.get('/healthcheck', (req: Request, res: Response) => {
 });
 
 if (swaggerUi) {
+  const os = require('os');
+  const interfaces = os.networkInterfaces();
+  let localIpAddr = '';
+  for (const iface in interfaces) {
+    for (const alias of interfaces[iface]) {
+      if (alias.family === 'IPv4' && !alias.internal) {
+        localIpAddr = alias.address;
+        break;
+      }
+    }
+    if (localIpAddr) break;
+  }
+  console.log(`localIpAddr = ${localIpAddr}`);
+
   // extendZodWithOpenApi(z);
   // serving the src/openapi directory at the root application url
   app.use(express.static(path.join(__dirname, 'openapi')));
@@ -90,13 +103,18 @@ if (swaggerUi) {
   console.log('__dirname = ', __dirname);
   console.log(path.join(__dirname, 'static'));
   console.log('swaggerUiAssetPath = ', swaggerUiAssetPath);
-  const customSwaggerInitializer = fs.readFileSync(
-    `${__dirname}/openapi/swagger-initializer.js`
-  );
+  const customSwaggerInitializer = fs
+    .readFileSync(`${__dirname}/openapi/swagger-initializer.js`)
+    .toString()
+    .replace(
+      `let devServerHostIp = ''`,
+      `let devServerHostIp = '${localIpAddr}'`
+    );
   // intercept the request for swagger-initializer.js
-  app.get('/api/api-docs/swagger-initializer.js', (req, res) =>
-    res.send(customSwaggerInitializer)
-  );
+  app.get('/api/api-docs/swagger-initializer.js', (req, res) => {
+    res.set('Content-Type', 'text/javascript');
+    res.send(customSwaggerInitializer);
+  });
   // app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(oaiSpec, options)); //{
   // // above works
   // app.use(
@@ -111,7 +129,27 @@ if (swaggerUi) {
   // either:
   const swaggerDocument = require('./openapi/swagger.json');
   app.get('/api/api-docs/swagger.json', (req, res) => {
-    res.json(swaggerDocument);
+    // res.json(swaggerDocument);
+
+    // Clone the document to avoid modifying the original object globally
+    const dynamicDocument = JSON.parse(JSON.stringify(swaggerDocument));
+
+    // Get the host from the request headers
+    const host = req.headers.host;
+    const protocol = req.protocol; // 'http' or 'https'
+    console.log(`host = ${host}`); // could be network ip or localhost
+
+    // Update the server URL
+    if (host) {
+      dynamicDocument.servers = [
+        {
+          url: `${protocol}://${host}/api/api-docs`,
+          // description: 'Current dynamic server',
+        },
+      ];
+    }
+
+    res.json(dynamicDocument);
   });
   // or:
   // app.use(

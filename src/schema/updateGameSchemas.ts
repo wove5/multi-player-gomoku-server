@@ -1,16 +1,18 @@
-import z, { string, object, record, ZodObject } from 'zod';
+import { z } from '../zod-config';
+// import { string, object, record, ZodObject } from 'zod';
 import mongoose from 'mongoose';
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
+// import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 
-extendZodWithOpenApi(z);
+// extendZodWithOpenApi(z);
 
-const UpdateGameSelectPosition = object({
-  id: string({
-    error: (issue) =>
-      issue.input === undefined
-        ? 'board position id required: missing pos id'
-        : `Invalid input type: expected string, received ${typeof issue.input}`,
-  })
+const UpdateGameSelectPosition = z.object({
+  id: z
+    .string({
+      error: (issue) =>
+        issue.input === undefined
+          ? 'board position id required: missing pos id'
+          : `Invalid input type: expected string, received ${typeof issue.input}`,
+    })
     .min(1, 'Position ObjectId is required')
     .refine(
       (val) =>
@@ -20,10 +22,11 @@ const UpdateGameSelectPosition = object({
     ),
 });
 
-const UpdateGameChat = object({
-  msg: object({
-    message: string().min(1, { error: 'Message text required' }),
-    userId: string()
+const UpdateGameChat = z.object({
+  msg: z.object({
+    message: z.string().min(1, { error: 'Message text required' }),
+    userId: z
+      .string()
       .min(1, { error: 'userId of player required' })
       .refine(
         (val) =>
@@ -31,15 +34,15 @@ const UpdateGameChat = object({
           new mongoose.Types.ObjectId(val).toString() === val,
         { error: 'Invalid mongoDB ObjectId for userId' }
       ),
-    userName: string().min(1, { error: 'userName of player required' }),
+    userName: z.string().min(1, { error: 'userName of player required' }),
   }),
 });
 
-const UpdateGameReset = object({
+const UpdateGameReset = z.object({
   status: z.literal('NONE', { error: 'unknown status value' }),
 });
 
-const UpdateGameJoinLeave = object({
+const UpdateGameJoinLeave = z.object({
   action: z.union([z.literal('JOIN'), z.literal('LEAVE'), z.literal('REST')], {
     error: 'unknown action value',
   }),
@@ -55,8 +58,9 @@ const updateGamePayloadGeneral = {
 };
 
 export const readUpdateDeleteGameParams = {
-  params: object({
-    id: string()
+  params: z.object({
+    id: z
+      .string()
       .min(1, 'Game id is required')
       .refine(
         (val) =>
@@ -71,11 +75,12 @@ export const readUpdateDeleteGameParams = {
   }),
 };
 
-export const readGameSchema = object({
+export const readGameSchema = z.object({
   ...readUpdateDeleteGameParams,
 });
 
-export const assertUpdateGamePayloadShape = record(z.string(), z.any())
+export const assertUpdateGamePayloadShape = z
+  .record(z.string(), z.any())
   .refine(
     (val) => {
       const keys = Object.keys(val);
@@ -102,39 +107,40 @@ export const assertUpdateGamePayloadShape = record(z.string(), z.any())
     }
   );
 
-export const updateGameGeneralSchema = object({
+export const updateGameGeneralSchema = z.object({
   ...readUpdateDeleteGameParams,
   ...updateGamePayloadGeneral,
 });
 
-export const UpdateGameSelectPositionSchema = object({
+export const UpdateGameSelectPositionSchema = z.object({
   ...readUpdateDeleteGameParams,
   ...{ body: UpdateGameSelectPosition },
 });
 
-export const UpdateGameResetSchema = object({
+export const UpdateGameResetSchema = z.object({
   ...readUpdateDeleteGameParams,
   ...{ body: UpdateGameReset },
 });
 
-export const UpdateGameJoinLeaveSchema = object({
+export const UpdateGameJoinLeaveSchema = z.object({
   ...readUpdateDeleteGameParams,
   ...{ body: UpdateGameJoinLeave },
 });
 
-export const UpdateGameChatSchema = object({
+export const UpdateGameChatSchema = z.object({
   ...readUpdateDeleteGameParams,
   ...{ body: UpdateGameChat },
 });
 
-export const UpdateGameSchemas: Record<string, ZodObject> = {
+// this one is not a schema, it's a specially created object used to access a schema
+export const UpdateGameSchemas: Record<string, z.ZodObject> = {
   id: UpdateGameSelectPositionSchema,
   msg: UpdateGameChatSchema,
   status: UpdateGameResetSchema,
   action: UpdateGameJoinLeaveSchema,
 };
 
-export const deleteGameSchema = object({
+export const deleteGameSchema = z.object({
   ...readUpdateDeleteGameParams,
 });
 

@@ -362,6 +362,9 @@ async function isMoveDBRequest(
             },
           ],
         },
+        establishedPlayer: {
+          $arrayElemAt: ['$players.color', 0],
+        },
         currentSelIndex: {
           $indexOfArray: [
             '$positions._id',
@@ -375,8 +378,12 @@ async function isMoveDBRequest(
 
   // block player's attempt to make move ahead of their turn
   if (
-    selContext[0].isMulti &&
-    selContext[0].lastSelStatus === selContext[0].playerColor // ||
+    (selContext[0].isMulti &&
+      selContext[0].lastSelStatus === selContext[0].playerColor) ||
+    (selContext[0].lastSelStatus === POSITION_STATUS.NONE &&
+      selContext[0].playerColor !== selContext[0].establishedPlayer)
+
+    // ||
     // (selContext[0].lastSelStatus === POSITION_STATUS.NONE &&
     //   selContext[0].playerColor !== POSITION_STATUS.BLACK))
   )
@@ -387,6 +394,11 @@ async function isMoveDBRequest(
       result: {
         status: GAMESTATUS.ACTIVE,
         // player: selContext[0].lastSelStatus,
+        // considered putting establishedPlayer here but it'd be incorrect
+        // if the condition was (isMulti && lastSelStatus === playerColor)
+        // and establishedPlayer === playerColor; i.e. playerColor would
+        // incorrectly be given the go ahead for next move at client side
+        // even thought the api would vet a req. for such a move.
         player:
           selContext[0].playerColor === PLAYER.BLACK
             ? PLAYER.WHITE
