@@ -5,9 +5,14 @@
     "title": "Gomoku Game API",
     "description": "Open API documentation for Gomoku Game"
   },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
   "servers": [
     {
-      "url": "http://localhost:8081/api/api-docs"
+      "url": "http://localhost:8081/api"
     }
   ],
   "tags": [
@@ -21,6 +26,13 @@
     }
   ],
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
     "schemas": {
       "ObjectIdStringSchema": {
         "type": "string",
@@ -32,6 +44,16 @@
       "ObjectIdSchema": {
         "type": "string",
         "description": "Game Id | User Id | Position Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+      },
+      "PositionIdSchema": {
+        "type": "string",
+        "minLength": 24,
+        "maxLength": 24,
+        "pattern": "^[0-9A-Fa-f]+$",
+        "description": "Position Id:\n\nMongoDB ObjectId as a string",
+        "examples": [
+          "656789abcdef1234567890ab"
+        ]
       },
       "GameSchema": {
         "type": "object",
@@ -1202,13 +1224,15 @@
         },
         "description": "Update Game >> DB reply to server"
       },
-      "GameId": {
+      "GameIdSchema": {
         "type": "string",
         "minLength": 24,
         "maxLength": 24,
         "pattern": "^[0-9A-Fa-f]+$",
         "description": "Game Id:\n\nMongoDB ObjectId as a string",
-        "example": "656789abcdef1234567890ab"
+        "examples": [
+          "656789abcdef1234567890ab"
+        ]
       },
       "MoveRequest": {
         "type": "object",
@@ -1224,7 +1248,10 @@
             "properties": {
               "id": {
                 "type": "string",
-                "minLength": 1
+                "minLength": 24,
+                "maxLength": 24,
+                "pattern": "^[0-9A-Fa-f]+$",
+                "description": "Position Id:\n\nMongoDB ObjectId as a string"
               }
             },
             "required": [
@@ -1259,7 +1286,10 @@
                   },
                   "userId": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 24,
+                    "maxLength": 24,
+                    "pattern": "^[0-9A-Fa-f]+$",
+                    "description": "User Id:\n\nMongoDB ObjectId as a string"
                   },
                   "userName": {
                     "type": "string",
@@ -1380,9 +1410,9 @@
       }
     },
     "parameters": {
-      "GameId": {
+      "GameIdSchema": {
         "schema": {
-          "$ref": "#/components/schemas/GameId"
+          "$ref": "#/components/schemas/GameIdSchema"
         },
         "required": true,
         "description": "Game Id:\n\nMongoDB ObjectId as a string",
@@ -1392,6 +1422,199 @@
     }
   },
   "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "security": [],
+        "summary": "Register for account",
+        "description": "Register/ sign-up/ create account with username & password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "object",
+                    "properties": {
+                      "username": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "password": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              },
+              "examples": {
+                "eg1": {
+                  "value": {
+                    "username": "test1",
+                    "password": "pass1"
+                  },
+                  "description": "if test values already exist try others eg 1..10... etc"
+                },
+                "eg2": {
+                  "value": {
+                    "username": "test2",
+                    "password": "pass2"
+                  },
+                  "description": "if test values already exist try others eg 1..10... etc"
+                },
+                "eg3": {
+                  "value": {
+                    "username": "test3",
+                    "password": "pass3"
+                  },
+                  "description": "if test values already exist try others eg 1..10... etc"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": {
+                      "type": "string",
+                      "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                    },
+                    "token": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "_id",
+                    "token"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "User already exists"
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "security": [],
+        "summary": "Sign in to account",
+        "description": "Sign in to account with username & password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "object",
+                    "properties": {
+                      "username": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "password": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              },
+              "examples": {
+                "eg1": {
+                  "value": {
+                    "username": "test1",
+                    "password": "pass1"
+                  }
+                },
+                "eg2": {
+                  "value": {
+                    "username": "test2",
+                    "password": "pass2"
+                  }
+                },
+                "eg3": {
+                  "value": {
+                    "username": "test3",
+                    "password": "pass3"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User signed into account & granted access via allocated json web token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": {
+                      "type": "string",
+                      "description": "User Id:\n\nmongodb ObjectId as returned from a mongodb query (24 character hexidecimal string)"
+                    },
+                    "token": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "_id",
+                    "token"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid credentials"
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "tags": [
@@ -1459,19 +1682,28 @@
               "examples": {
                 "eg1": {
                   "value": {
-                    "size": "[5, 5]",
+                    "size": [
+                      5,
+                      5
+                    ],
                     "isMulti": false
                   }
                 },
                 "eg2": {
                   "value": {
-                    "size": "[10, 10]",
+                    "size": [
+                      10,
+                      10
+                    ],
                     "isMulti": true
                   }
                 },
                 "eg3": {
                   "value": {
-                    "size": "[7, 7]",
+                    "size": [
+                      7,
+                      7
+                    ],
                     "isMulti": false
                   }
                 }
@@ -1543,7 +1775,7 @@
         "description": "Retrieve an incompleted game",
         "parameters": [
           {
-            "$ref": "#/components/parameters/GameId"
+            "$ref": "#/components/parameters/GameIdSchema"
           }
         ],
         "responses": {
@@ -1580,7 +1812,7 @@
         "description": "Update a game",
         "parameters": [
           {
-            "$ref": "#/components/parameters/GameId"
+            "$ref": "#/components/parameters/GameIdSchema"
           }
         ],
         "requestBody": {
@@ -1589,6 +1821,48 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateGameRequest"
+              },
+              "examples": {
+                "move": {
+                  "value": {
+                    "action": "MOVE",
+                    "input": {
+                      "id": "656789abcdef1234567890ab"
+                    }
+                  }
+                },
+                "message": {
+                  "value": {
+                    "action": "MSG",
+                    "input": {
+                      "msg": {
+                        "message": "Hello there",
+                        "userId": "cdf1feeb098fa35becd6f14a",
+                        "userName": "test1"
+                      }
+                    }
+                  }
+                },
+                "reset": {
+                  "value": {
+                    "action": "RESET"
+                  }
+                },
+                "join": {
+                  "value": {
+                    "action": "JOIN"
+                  }
+                },
+                "leave": {
+                  "value": {
+                    "action": "LEAVE"
+                  }
+                },
+                "rest": {
+                  "value": {
+                    "action": "REST"
+                  }
+                }
               }
             }
           }

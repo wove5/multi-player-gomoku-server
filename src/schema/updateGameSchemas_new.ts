@@ -1,25 +1,29 @@
 import { error } from 'console';
 import { z } from '../zod-config';
 import mongoose from 'mongoose';
+import { objectIdStringSchema } from './objectIdStringSchema';
 
 const updateGameMove = z
   .object({
     action: z.literal('MOVE'),
+    // input: z.object({
+    //   id: z
+    //     .string({
+    //       error: (issue) =>
+    //         issue.input === undefined
+    //           ? 'board position id required: missing pos id'
+    //           : `Invalid input type: expected string, received ${typeof issue.input}`,
+    //     })
+    //     .min(1, 'Position ObjectId is required')
+    //     .refine(
+    //       (val) =>
+    //         mongoose.isObjectIdOrHexString(val) &&
+    //         new mongoose.Types.ObjectId(val).toString() === val,
+    //       { error: 'Invalid mongoDB ObjectId for position id' }
+    //     ),
+    // }),
     input: z.object({
-      id: z
-        .string({
-          error: (issue) =>
-            issue.input === undefined
-              ? 'board position id required: missing pos id'
-              : `Invalid input type: expected string, received ${typeof issue.input}`,
-        })
-        .min(1, 'Position ObjectId is required')
-        .refine(
-          (val) =>
-            mongoose.isObjectIdOrHexString(val) &&
-            new mongoose.Types.ObjectId(val).toString() === val,
-          { error: 'Invalid mongoDB ObjectId for position id' }
-        ),
+      id: objectIdStringSchema('Position Id'),
     }),
   })
   .openapi('MoveRequest');
@@ -28,18 +32,25 @@ export type UpdateGameMove = z.infer<typeof updateGameMove>;
 const updateGameChat = z
   .object({
     action: z.literal('MSG'),
+    // input: z.object({
+    //   msg: z.object({
+    //     message: z.string().min(1, { error: 'Message text required' }),
+    //     userId: z
+    //       .string()
+    //       .min(1, { error: 'userId of player required' })
+    //       .refine(
+    //         (val) =>
+    //           mongoose.isObjectIdOrHexString(val) &&
+    //           new mongoose.Types.ObjectId(val).toString() === val,
+    //         { error: 'Invalid mongoDB ObjectId for userId' }
+    //       ),
+    //     userName: z.string().min(1, { error: 'userName of player required' }),
+    //   }),
+    // }),
     input: z.object({
       msg: z.object({
         message: z.string().min(1, { error: 'Message text required' }),
-        userId: z
-          .string()
-          .min(1, { error: 'userId of player required' })
-          .refine(
-            (val) =>
-              mongoose.isObjectIdOrHexString(val) &&
-              new mongoose.Types.ObjectId(val).toString() === val,
-            { error: 'Invalid mongoDB ObjectId for userId' }
-          ),
+        userId: objectIdStringSchema('User Id'),
         userName: z.string().min(1, { error: 'userName of player required' }),
       }),
     }),

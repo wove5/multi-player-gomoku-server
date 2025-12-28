@@ -34,6 +34,8 @@ import { serverErrorSchema } from '../schema/serverErrorSchema';
 import { incompleteGamesArraySchema } from '../schema/incompleteGamesSchema';
 import { completedGamesArraySchema } from '../schema/completedGamesSchema';
 import { gameSchema } from '../schema/gameSchema';
+import { authResponseSchema } from '../schema/userAuthDbReply';
+import { registerSchema } from '../schema/auth.schema';
 
 dotenv.config();
 const port = process.env.PORT;
@@ -57,14 +59,21 @@ if (process.env.allowHost === undefined) {
 
   registry.register('ObjectIdSchema', objectId);
 
+  const positionId = registry.register(
+    'PositionIdSchema',
+    objectIdStringSchema('Position Id').openapi({
+      examples: ['656789abcdef1234567890ab'],
+    })
+  );
+
   const gameId = registry.registerParameter(
-    'GameId',
+    'GameIdSchema',
     objectIdStringSchema('Game Id').openapi({
       param: {
         name: 'id',
         in: 'path',
       },
-      example: '656789abcdef1234567890ab',
+      examples: ['656789abcdef1234567890ab'],
     })
   );
 
@@ -125,6 +134,141 @@ if (process.env.allowHost === undefined) {
     'UpdateGameDbReply',
     updateGameDBReplySchema
   );
+
+  const bearerAuth = registry.registerComponent(
+    'securitySchemes',
+    'bearerAuth',
+    {
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+    }
+  );
+
+  registry.registerPath({
+    method: 'post',
+    tags: ['authentication'],
+    path: '/auth/register',
+    security: [],
+    summary: 'Register for account',
+    description: 'Register/ sign-up/ create account with username & password',
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: registerSchema,
+            examples: {
+              eg1: {
+                value: {
+                  username: 'test1',
+                  password: 'pass1',
+                },
+                description:
+                  'if test values already exist try others eg 1..10... etc',
+              },
+              eg2: {
+                value: {
+                  username: 'test2',
+                  password: 'pass2',
+                },
+                description:
+                  'if test values already exist try others eg 1..10... etc',
+              },
+              eg3: {
+                value: {
+                  username: 'test3',
+                  password: 'pass3',
+                },
+                description:
+                  'if test values already exist try others eg 1..10... etc',
+              },
+            },
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Account created',
+        content: {
+          'application/json': {
+            schema: authResponseSchema,
+          },
+        },
+      },
+      409: {
+        description: 'User already exists',
+      },
+      500: {
+        description: 'Server error',
+        content: {
+          'application/json': {
+            schema: ServerErrorSchema,
+          },
+        },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    tags: ['authentication'],
+    path: '/auth/login',
+    security: [],
+    summary: 'Sign in to account',
+    description: 'Sign in to account with username & password',
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: registerSchema,
+            examples: {
+              eg1: {
+                value: {
+                  username: 'test1',
+                  password: 'pass1',
+                },
+              },
+              eg2: {
+                value: {
+                  username: 'test2',
+                  password: 'pass2',
+                },
+              },
+              eg3: {
+                value: {
+                  username: 'test3',
+                  password: 'pass3',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description:
+          'User signed into account & granted access via allocated json web token',
+        content: {
+          'application/json': {
+            schema: authResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Invalid credentials',
+      },
+      500: {
+        description: 'Server error',
+        content: {
+          'application/json': {
+            schema: ServerErrorSchema,
+          },
+        },
+      },
+    },
+  });
 
   registry.registerPath({
     method: 'get',
@@ -192,19 +336,19 @@ if (process.env.allowHost === undefined) {
             examples: {
               eg1: {
                 value: {
-                  size: '[5, 5]',
+                  size: [5, 5],
                   isMulti: false,
                 },
               },
               eg2: {
                 value: {
-                  size: '[10, 10]',
+                  size: [10, 10],
                   isMulti: true,
                 },
               },
               eg3: {
                 value: {
-                  size: '[7, 7]',
+                  size: [7, 7],
                   isMulti: false,
                 },
               },
@@ -314,7 +458,46 @@ if (process.env.allowHost === undefined) {
         content: {
           'application/json': {
             schema: updateGamePayloadGeneral.body,
-            // schema: updateGamePayloadGeneral,
+            examples: {
+              move: {
+                value: {
+                  action: 'MOVE',
+                  input: { id: '656789abcdef1234567890ab' },
+                },
+              },
+              message: {
+                value: {
+                  action: 'MSG',
+                  input: {
+                    msg: {
+                      message: 'Hello there',
+                      userId: 'cdf1feeb098fa35becd6f14a',
+                      userName: 'test1',
+                    },
+                  },
+                },
+              },
+              reset: {
+                value: {
+                  action: 'RESET',
+                },
+              },
+              join: {
+                value: {
+                  action: 'JOIN',
+                },
+              },
+              leave: {
+                value: {
+                  action: 'LEAVE',
+                },
+              },
+              rest: {
+                value: {
+                  action: 'REST',
+                },
+              },
+            },
           },
         },
         required: true,
@@ -348,14 +531,6 @@ if (process.env.allowHost === undefined) {
 
   const generator = new OpenApiGeneratorV31(registry.definitions);
 
-  // TODO: find a way to access the Express req object to
-  // TODO: extract the hostIp of the origin to replace the
-  // TODO: hard coded "localhost" in the url prop of servers
-  //   req.headers.origin !== 'http://localhost:3000' &&
-  // req.headers.origin !== `http://${hostIp}:3000`)
-  // const hostIp = req.headers.host?.split(':')[0];
-  // console.log(`hostIp = ${hostIp}`);
-
   openApiSpec = generator.generateDocument({
     openapi: '3.1.0',
     info: {
@@ -363,9 +538,20 @@ if (process.env.allowHost === undefined) {
       title: 'Gomoku Game API',
       description: 'Open API documentation for Gomoku Game',
     },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
     servers: [
       {
-        url: `http://localhost:${port}/api/api-docs`,
+        // the custom dynamic route '/api/api-docs/swagger.json' will replace
+        // localhost with whatever the client specifies as host in their http req.
+        // and send a modified copy of swagger.json. In the case for the swagger ui,
+        // it is based on the download-url-input that is controlled by the url field
+        // value in swaggerUiBundle from swagger-initializer. So servers.url in the
+        // oapi doc and swagger ui will reflect what is in download-url-input
+        url: `http://localhost:${port}/api`,
       },
     ],
     tags: [
