@@ -107,6 +107,8 @@ if (swaggerUi) {
     .readFileSync(`${__dirname}/openapi/swagger-initializer.js`)
     .toString()
     .replace(
+      // inject the actual network ip addr of server into swagger-initializer
+      // for swagger ui validator badge to use, as it will not work using localhost
       `let devServerHostIp = ''`,
       `let devServerHostIp = '${localIpAddr}'`
     );
@@ -143,7 +145,7 @@ if (swaggerUi) {
     if (host) {
       dynamicDocument.servers = [
         {
-          url: `${protocol}://${host}/api/api-docs`,
+          url: `${protocol}://${host}/api`,
           // description: 'Current dynamic server',
         },
       ];

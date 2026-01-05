@@ -551,7 +551,7 @@ if (process.env.allowHost === undefined) {
         // it is based on the download-url-input that is controlled by the url field
         // value in swaggerUiBundle from swagger-initializer. So servers.url in the
         // oapi doc and swagger ui will reflect what is in download-url-input
-        url: `http://localhost:${port}/api/api-docs`,
+        url: `http://localhost:${port}/api`,
       },
     ],
     tags: [
