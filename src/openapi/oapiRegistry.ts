@@ -1,3 +1,4 @@
+import { UpdateGameDbReply } from './../schema/updateGameDBResponseSchema';
 import dotenv from 'dotenv';
 import {
   OpenAPIRegistry,
@@ -11,6 +12,10 @@ import { updateGamePayloadGeneral } from '../schema/updateGameSchemas_new';
 import {
   updateGameResponseSchema,
   updateGameDBReplySchema,
+  exampleNewGame,
+  exampleIncompleteGame,
+  exampleGameWon,
+  exampleGameDrawn,
 } from '../schema/updateGameResponseSchema';
 import { updateGameDbReplySchema } from '../schema/updateGameDBResponseSchema';
 // import {
@@ -35,7 +40,9 @@ import { incompleteGamesArraySchema } from '../schema/incompleteGamesSchema';
 import { completedGamesArraySchema } from '../schema/completedGamesSchema';
 import { gameSchema } from '../schema/gameSchema';
 import { authResponseSchema } from '../schema/userAuthDbReply';
-import { registerSchema } from '../schema/auth.schema';
+import { authPayloadSchema } from '../schema/auth.schema';
+import { gamestatusSchema } from '../schema/constantEnumSchemas';
+import { GAMESTATUS, PLAYER, PLAYER_STATE } from '../constants';
 
 dotenv.config();
 const port = process.env.PORT;
@@ -156,7 +163,8 @@ if (process.env.allowHost === undefined) {
       body: {
         content: {
           'application/json': {
-            schema: registerSchema,
+            // schema: registerSchema,
+            schema: authPayloadSchema,
             examples: {
               eg1: {
                 value: {
@@ -221,7 +229,8 @@ if (process.env.allowHost === undefined) {
       body: {
         content: {
           'application/json': {
-            schema: registerSchema,
+            // schema: registerSchema,
+            schema: authPayloadSchema,
             examples: {
               eg1: {
                 value: {
@@ -395,6 +404,7 @@ if (process.env.allowHost === undefined) {
         content: {
           'application/json': {
             schema: GameSchema,
+            example: exampleIncompleteGame,
           },
         },
       },
@@ -429,6 +439,14 @@ if (process.env.allowHost === undefined) {
         content: {
           'application/json': {
             schema: GameSchema,
+            examples: {
+              'Game Won': {
+                value: exampleGameWon,
+              },
+              ' Game Drawn': {
+                value: exampleGameDrawn,
+              },
+            },
           },
         },
       },
@@ -509,6 +527,25 @@ if (process.env.allowHost === undefined) {
         content: {
           'application/json': {
             schema: UpdateGameResponse,
+            // schema: UpdateGameDbReply,
+            examples: {
+              join: {
+                value: {
+                  game: exampleIncompleteGame,
+                },
+              },
+              move: {
+                value: {
+                  status: GAMESTATUS.ACTIVE,
+                  player: PLAYER.WHITE,
+                },
+              },
+              reset: {
+                value: {
+                  game: exampleNewGame,
+                },
+              },
+            },
           },
         },
       },
