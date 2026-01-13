@@ -339,6 +339,7 @@ async function isMoveDBRequest(
     },
     {
       $project: {
+        // color of last selected position or POSITION_STATUS.NONE
         lastSelStatus: {
           $cond: [
             { $eq: [{ $size: '$selectedPositions' }, 0] },
@@ -351,6 +352,7 @@ async function isMoveDBRequest(
             },
           ],
         },
+        // color of player making this move
         playerColor: {
           $arrayElemAt: [
             '$players.color',
@@ -362,22 +364,35 @@ async function isMoveDBRequest(
             },
           ],
         },
+        // player in game for longest; i.e. was present when the other joined
         establishedPlayer: {
           $arrayElemAt: ['$players.color', 0],
         },
+        // index of selected position
         currentSelIndex: {
           $indexOfArray: [
             '$positions._id',
             new mongoose.Types.ObjectId(body.input.id),
           ],
         },
+        // include game status and isMulti in agg result
+        status: 1,
         isMulti: 1,
       },
     },
   ]);
 
+  // prevent any further moves if game is over
+  if (selContext[0].status !== GAMESTATUS.ACTIVE)
+    return {
+      action: 'MOVE',
+      result: {
+        status: selContext[0].status,
+        player: selContext[0].lastSelStatus,
+      },
+    };
   // block player's attempt to make move ahead of their turn
-  if (
+  else if (
     (selContext[0].isMulti &&
       selContext[0].lastSelStatus === selContext[0].playerColor) ||
     (selContext[0].lastSelStatus === POSITION_STATUS.NONE &&
