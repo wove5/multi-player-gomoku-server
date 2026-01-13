@@ -270,7 +270,7 @@ gameHandler.get(
     // try {
     const userId = req.userId;
     const gameId = req.params.id;
-    res.locals.asyncData = await getIncompleteGame(gameId, userId);
+    res.locals.asyncData = await getCompletedGame(gameId, userId);
     next();
   },
   validateGetGameResponseSchema,
